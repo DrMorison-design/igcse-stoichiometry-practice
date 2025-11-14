@@ -1,0 +1,611 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Stoichiometry Practice – IGCSE</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      background: #f5f5f5;
+    }
+    h1 {
+      font-size: 1.8rem;
+      margin-bottom: 0.3rem;
+    }
+    .tagline {
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+      color: #555;
+    }
+    .card {
+      background: #ffffff;
+      border-radius: 0.75rem;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+    }
+    .label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: #555;
+      margin-bottom: 0.3rem;
+    }
+    .equation {
+      font-weight: 600;
+      font-size: 1.05rem;
+      margin-bottom: 0.3rem;
+    }
+    .description {
+      font-size: 0.9rem;
+      color: #555;
+      margin-bottom: 0.5rem;
+    }
+    .question-text {
+      font-size: 1rem;
+      margin-bottom: 0.2rem;
+    }
+    .question-meta {
+      font-size: 0.85rem;
+      color: #555;
+      margin-bottom: 0.6rem;
+    }
+    input[type="number"],
+    input[type="text"] {
+      padding: 0.3rem 0.5rem;
+      border-radius: 0.4rem;
+      border: 1px solid #ccc;
+      font-size: 1rem;
+    }
+    input[type="number"] {
+      width: 160px;
+    }
+    input[type="text"] {
+      width: 200px;
+    }
+    .unit {
+      margin-left: 0.2rem;
+      font-size: 0.9rem;
+    }
+    .buttons {
+      margin-top: 0.8rem;
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    button {
+      border: none;
+      border-radius: 999px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.9rem;
+      cursor: pointer;
+      background: #2f8fda;
+      color: white;
+    }
+    button.secondary {
+      background: #e0e0e0;
+      color: #333;
+    }
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+    .feedback {
+      margin-top: 0.7rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .feedback.correct {
+      color: #1b8a4a;
+    }
+    .feedback.incorrect {
+      color: #c0392b;
+    }
+    .solution-steps {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      line-height: 1.4;
+    }
+    .solution-steps p {
+      margin: 0.2rem 0;
+    }
+    .solution-steps strong {
+      font-weight: 600;
+    }
+    .controls-row {
+      margin-bottom: 0.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    select {
+      padding: 0.25rem 0.5rem;
+      border-radius: 0.4rem;
+      border: 1px solid #ccc;
+      font-size: 0.9rem;
+    }
+    .note {
+      font-size: 0.8rem;
+      color: #666;
+      margin-top: 0.3rem;
+    }
+    .pill {
+      display: inline-block;
+      padding: 0.15rem 0.5rem;
+      border-radius: 999px;
+      background: #e8f2fc;
+      color: #1f4f91;
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-left: 0.3rem;
+    }
+    .small {
+      font-size: 0.85rem;
+      color: #555;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.85rem;
+      margin-top: 0.4rem;
+    }
+    th, td {
+      border-bottom: 1px solid #eee;
+      padding: 0.25rem 0.3rem;
+      text-align: left;
+    }
+    th {
+      font-weight: 600;
+      background: #f7f7f7;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.05rem 0.4rem;
+      border-radius: 999px;
+      background: #e9f7ef;
+      color: #1b8a4a;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <h1>Stoichiometry Practice</h1>
+  <div class="tagline">
+    Year 9/10 IGCSE practice – mass ↔ mass, mass ↔ gas volume, gas ↔ gas, concentration questions.  
+    Enter your answer to 2–3 s.f. The app accepts small rounding differences.
+  </div>
+
+  <!-- Player + analytics controls -->
+  <div class="card">
+    <div class="label">Player</div>
+    <div class="controls-row">
+      <input type="text" id="playerNameInput" placeholder="Enter your name or nickname">
+      <button id="setPlayerBtn">Set player</button>
+    </div>
+    <div class="small" id="currentPlayerLabel">Current player: <strong>Guest</strong></div>
+    <div class="note">
+      Leaderboard and stats are saved in this browser only (using localStorage).
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="controls-row">
+      <div>
+        <span class="label">Question type</span><br>
+        <select id="questionType">
+          <option value="any">Mix of all</option>
+          <option value="mass-mass">Mass → mass</option>
+          <option value="mass-gas">Mass → gas volume</option>
+          <option value="gas-gas">Gas volume → gas volume</option>
+          <option value="conc-conc">Concentration → concentration</option>
+          <option value="conc-mass">Concentration → mass</option>
+          <option value="mass-conc">Mass → concentration</option>
+          <option value="conc-gas">Concentration → gas volume</option>
+        </select>
+      </div>
+      <div>
+        <span class="label">Difficulty</span><br>
+        <select id="difficulty">
+          <option value="easy">Nice whole-ish numbers</option>
+          <option value="medium">More variety</option>
+        </select>
+      </div>
+    </div>
+    <button id="newQuestionBtn">New Question</button>
+    <div class="note">
+      Uses molar volume 24.0 dm³ mol⁻¹ at room temperature and pressure.
+    </div>
+  </div>
+
+  <div class="card" id="questionCard" style="display:none;">
+    <div class="label">Balanced equation</div>
+    <div class="equation" id="equationText"></div>
+    <div class="description" id="reactionDescription"></div>
+
+    <div class="label">Question<span id="questionTypeTag" class="pill"></span></div>
+    <div class="question-text" id="questionText"></div>
+    <div class="question-meta" id="questionMeta"></div>
+
+    <div class="label">Your answer</div>
+    <div>
+      <input type="number" id="answerInput" step="0.0001">
+      <span class="unit" id="answerUnit"></span>
+    </div>
+
+    <div class="buttons">
+      <button id="checkAnswerBtn">Check answer</button>
+      <button id="showSolutionBtn" class="secondary">Show worked solution</button>
+    </div>
+
+    <div id="feedback" class="feedback"></div>
+    <div id="solutionContainer" class="solution-steps"></div>
+  </div>
+
+  <!-- Analytics & leaderboard -->
+  <div class="card">
+    <div class="label">Your stats (this browser)</div>
+    <div id="playerStats" class="small">
+      No questions answered yet.
+    </div>
+
+    <div class="label" style="margin-top:0.7rem;">Leaderboard (best streak)</div>
+    <div id="leaderboard" class="small">
+      No scores saved yet.
+    </div>
+  </div>
+
+  <script>
+    // --- Data setup --------------------------------------------------------
+
+    const MOLAR_VOLUME = 24.0; // dm^3 mol^-1 at RTP
+
+    // Each reaction has: description, equation, and species data
+    const reactions = [
+      {
+        id: "mg-hcl",
+        description: "Magnesium reacting with hydrochloric acid.",
+        equation: "Mg + 2HCl → MgCl₂ + H₂",
+        species: {
+          Mg:  { coeff: 1, molarMass: 24.3,  state: "s" },
+          HCl: { coeff: 2, molarMass: 36.5,  state: "aq" },
+          MgCl2: { coeff: 1, molarMass: 95.3, state: "aq" },
+          H2:  { coeff: 1, molarMass: 2.0,   state: "g" }
+        }
+      },
+      {
+        id: "ch4",
+        description: "Methane burning in oxygen.",
+        equation: "CH₄ + 2O₂ → CO₂ + 2H₂O",
+        species: {
+          CH4: { coeff: 1, molarMass: 16.0, state: "g" },
+          O2:  { coeff: 2, molarMass: 32.0, state: "g" },
+          CO2: { coeff: 1, molarMass: 44.0, state: "g" },
+          H2O: { coeff: 2, molarMass: 18.0, state: "l" }
+        }
+      },
+      {
+        id: "caco3-hcl",
+        description: "Calcium carbonate reacting with hydrochloric acid.",
+        equation: "CaCO₃ + 2HCl → CaCl₂ + CO₂ + H₂O",
+        species: {
+          CaCO3: { coeff: 1, molarMass: 100.1, state: "s" },
+          HCl:   { coeff: 2, molarMass: 36.5,  state: "aq" },
+          CaCl2: { coeff: 1, molarMass: 111.0, state: "aq" },
+          CO2:   { coeff: 1, molarMass: 44.0,  state: "g" },
+          H2O:   { coeff: 1, molarMass: 18.0,  state: "l" }
+        }
+      },
+      {
+        id: "h2-o2",
+        description: "Hydrogen burning in oxygen.",
+        equation: "2H₂ + O₂ → 2H₂O",
+        species: {
+          H2: { coeff: 2, molarMass: 2.0,  state: "g" },
+          O2: { coeff: 1, molarMass: 32.0, state: "g" },
+          H2O:{ coeff: 2, molarMass: 18.0, state: "l" }
+        }
+      },
+      {
+        id: "hcl-naoh",
+        description: "Hydrochloric acid neutralised by sodium hydroxide.",
+        equation: "HCl + NaOH → NaCl + H₂O",
+        species: {
+          HCl:  { coeff: 1, molarMass: 36.5, state: "aq" },
+          NaOH: { coeff: 1, molarMass: 40.0, state: "aq" },
+          NaCl: { coeff: 1, molarMass: 58.5, state: "aq" },
+          H2O:  { coeff: 1, molarMass: 18.0, state: "l" }
+        }
+      },
+      {
+        id: "h2so4-naoh",
+        description: "Sulfuric acid neutralised by sodium hydroxide.",
+        equation: "H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O",
+        species: {
+          H2SO4: { coeff: 1, molarMass: 98.1, state: "aq" },
+          NaOH:  { coeff: 2, molarMass: 40.0, state: "aq" },
+          Na2SO4:{ coeff: 1, molarMass: 142.1, state: "aq" },
+          H2O:   { coeff: 2, molarMass: 18.0, state: "l" }
+        }
+      }
+    ];
+
+    // --- Utility functions -------------------------------------------------
+
+    function choice(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function roundDP(value, dp) {
+      const factor = Math.pow(10, dp);
+      return Math.round(value * factor) / factor;
+    }
+
+    function fmt(value) {
+      return Number(value).toString();
+    }
+
+    // --- Question generators ----------------------------------------------
+
+    // 1. Mass -> Mass
+    function generateMassMassQuestion(reaction, difficulty) {
+      const speciesKeys = Object.keys(reaction.species);
+      const knownKey = choice(speciesKeys);
+      let unknownKey = choice(speciesKeys);
+      while (unknownKey === knownKey) {
+        unknownKey = choice(speciesKeys);
+      }
+
+      const known = reaction.species[knownKey];
+      const unknown = reaction.species[unknownKey];
+
+      const baseMoles = difficulty === "easy" ? choice([0.25, 0.5, 1, 1.5, 2]) : choice([0.3, 0.6, 1.2, 1.8, 2.4]);
+      const knownMass = roundDP(baseMoles * known.molarMass, 1);
+
+      const nKnown = knownMass / known.molarMass;
+      const moleRatio = unknown.coeff / known.coeff;
+      const nUnknown = nKnown * moleRatio;
+      const mUnknown = nUnknown * unknown.molarMass;
+      const answer = roundDP(mUnknown, 2);
+
+      const questionText = `If ${knownMass} g of ${knownKey} reacts completely, calculate the mass of ${unknownKey} formed.`;
+      const meta = `Mass → mass stoichiometry (moles = mass ÷ molar mass, then use mole ratio).`;
+      const unit = "g";
+
+      const steps = [
+        `1. Calculate moles of ${knownKey}:`,
+        `   n(${knownKey}) = m ÷ M = ${knownMass} ÷ ${known.molarMass} = ${roundDP(nKnown, 3)} mol`,
+        `2. Use the mole ratio from the equation:`,
+        `   ${knownKey}: ${known.coeff}  →  ${unknownKey}: ${unknown.coeff}`,
+        `   n(${unknownKey}) = n(${knownKey}) × ( ${unknown.coeff} ÷ ${known.coeff} )`,
+        `                 = ${roundDP(nKnown, 3)} × ( ${unknown.coeff} ÷ ${known.coeff} )`,
+        `                 = ${roundDP(nUnknown, 3)} mol`,
+        `3. Convert moles of ${unknownKey} to mass:`,
+        `   m(${unknownKey}) = n × M = ${roundDP(nUnknown, 3)} × ${unknown.molarMass} = ${answer} g (to 2 d.p.)`
+      ];
+
+      return {
+        type: "mass-mass",
+        reaction,
+        questionText,
+        meta,
+        unit,
+        correctValue: answer,
+        steps
+      };
+    }
+
+    // 2. Mass -> Gas volume
+    function generateMassGasQuestion(reaction, difficulty) {
+      const gases = Object.keys(reaction.species).filter(k => reaction.species[k].state === "g");
+      const nonGases = Object.keys(reaction.species).filter(k => reaction.species[k].state !== "g");
+
+      if (gases.length === 0 || nonGases.length === 0) {
+        return generateMassMassQuestion(reaction, difficulty);
+      }
+
+      const knownKey = choice(nonGases);
+      const unknownKey = choice(gases);
+
+      const known = reaction.species[knownKey];
+      const unknown = reaction.species[unknownKey];
+
+      const baseMoles = difficulty === "easy" ? choice([0.25, 0.5, 1, 1.5, 2]) : choice([0.3, 0.6, 1.2, 1.8, 2.4]);
+      const knownMass = roundDP(baseMoles * known.molarMass, 1);
+
+      const nKnown = knownMass / known.molarMass;
+      const moleRatio = unknown.coeff / known.coeff;
+      const nUnknown = nKnown * moleRatio;
+      const VUnknown = nUnknown * MOLAR_VOLUME;
+      const answer = roundDP(VUnknown, 2);
+
+      const questionText = `If ${knownMass} g of ${knownKey} reacts completely, calculate the volume of ${unknownKey} gas produced at room temperature and pressure.`;
+      const meta = `Mass → gas volume (moles from mass, use mole ratio, then V = n × ${MOLAR_VOLUME}).`;
+      const unit = "dm³";
+
+      const steps = [
+        `1. Calculate moles of ${knownKey}:`,
+        `   n(${knownKey}) = m ÷ M = ${knownMass} ÷ ${known.molarMass} = ${roundDP(nKnown, 3)} mol`,
+        `2. Use mole ratio to find moles of ${unknownKey}:`,
+        `   n(${unknownKey}) = n(${knownKey}) × ( ${unknown.coeff} ÷ ${known.coeff} )`,
+        `                 = ${roundDP(nKnown, 3)} × ( ${unknown.coeff} ÷ ${known.coeff} )`,
+        `                 = ${roundDP(nUnknown, 3)} mol`,
+        `3. Convert moles to volume (at RTP, ${MOLAR_VOLUME} dm³ mol⁻¹):`,
+        `   V(${unknownKey}) = n × ${MOLAR_VOLUME} = ${roundDP(nUnknown, 3)} × ${MOLAR_VOLUME} = ${answer} dm³ (to 2 d.p.)`
+      ];
+
+      return {
+        type: "mass-gas",
+        reaction,
+        questionText,
+        meta,
+        unit,
+        correctValue: answer,
+        steps
+      };
+    }
+
+    // 3. Gas volume -> gas volume
+    function generateGasGasQuestion(reaction, difficulty) {
+      const gases = Object.keys(reaction.species).filter(k => reaction.species[k].state === "g");
+      if (gases.length < 2) {
+        return generateMassGasQuestion(reaction, difficulty);
+      }
+
+      const knownKey = choice(gases);
+      let unknownKey = choice(gases);
+      while (unknownKey === knownKey) {
+        unknownKey = choice(gases);
+      }
+
+      const known = reaction.species[knownKey];
+      const unknown = reaction.species[unknownKey];
+
+      const baseVol = difficulty === "easy" ? choice([2, 4, 6, 8, 10]) : choice([3, 5, 7, 9, 12]);
+      const knownV = baseVol;
+      const nKnown = knownV / MOLAR_VOLUME;
+      const moleRatio = unknown.coeff / known.coeff;
+      const nUnknown = nKnown * moleRatio;
+      const VUnknown = nUnknown * MOLAR_VOLUME;
+      const answer = roundDP(VUnknown, 2);
+
+      const questionText = `If ${knownV} dm³ of ${knownKey} gas reacts completely, calculate the volume of ${unknownKey} gas produced at room temperature and pressure.`;
+      const meta = `Gas volume → gas volume (volumes ∝ mole ratio at same T and P).`;
+      const unit = "dm³";
+
+      const steps = [
+        `Method 1 (using moles):`,
+        `1. Calculate moles of ${knownKey}:`,
+        `   n(${knownKey}) = V ÷ ${MOLAR_VOLUME} = ${knownV} ÷ ${MOLAR_VOLUME} = ${roundDP(nKnown, 3)} mol`,
+        `2. Use mole ratio:`,
+        `   n(${unknownKey}) = n(${knownKey}) × ( ${unknown.coeff} ÷ ${known.coeff} )`,
+        `                 = ${roundDP(nKnown, 3)} × ( ${unknown.coeff} ÷ ${known.coeff} )`,
+        `                 = ${roundDP(nUnknown, 3)} mol`,
+        `3. Convert back to volume:`,
+        `   V(${unknownKey}) = n × ${MOLAR_VOLUME} = ${roundDP(nUnknown, 3)} × ${MOLAR_VOLUME} = ${answer} dm³`,
+        ``,
+        `Method 2 (shortcut for gases at same T and P):`,
+        `• Volumes are in the same ratio as the coefficients.`,
+        `   ${knownKey}: ${known.coeff}  →  ${unknownKey}: ${unknown.coeff}`,
+        `• So V(${unknownKey}) = ${knownV} × ( ${unknown.coeff} ÷ ${known.coeff} ) = ${answer} dm³`
+      ];
+
+      return {
+        type: "gas-gas",
+        reaction,
+        questionText,
+        meta,
+        unit,
+        correctValue: answer,
+        steps
+      };
+    }
+
+    // 4. Concentration → concentration (titration style)
+    function generateConcConcQuestion(reaction, difficulty) {
+      if (!["hcl-naoh", "h2so4-naoh"].includes(reaction.id)) {
+        const suitable = reactions.filter(r => ["hcl-naoh", "h2so4-naoh"].includes(r.id));
+        reaction = choice(suitable);
+      }
+
+      let acidKey, baseKey;
+      if (reaction.id === "hcl-naoh") {
+        acidKey = "HCl";
+        baseKey = "NaOH";
+      } else {
+        acidKey = "H2SO4";
+        baseKey = "NaOH";
+      }
+      const acid = reaction.species[acidKey];
+      const base = reaction.species[baseKey];
+
+      const cAcid = difficulty === "easy" ? choice([0.5, 1.0, 1.5, 2.0]) : choice([0.75, 1.25, 1.8]);
+      const VAcid = difficulty === "easy" ? choice([0.020, 0.025, 0.030, 0.040]) : choice([0.018, 0.022, 0.035]);
+      const VBase = difficulty === "easy" ? choice([0.020, 0.025, 0.030, 0.040]) : choice([0.018, 0.022, 0.035]);
+
+      const nAcid = cAcid * VAcid;
+      const nBase = nAcid * (base.coeff / acid.coeff);
+      const cBase = nBase / VBase;
+      const answer = roundDP(cBase, 3);
+
+      const questionText = `A ${fmt(cAcid)} mol dm⁻³ ${acidKey}(aq) solution is used to titrate ${baseKey}(aq).\n` +
+        `If ${fmt(VAcid * 1000)} cm³ of the acid exactly neutralises ${fmt(VBase * 1000)} cm³ of the base, calculate the concentration of the ${baseKey}(aq).`;
+      const meta = `Concentration → concentration (n = cV, use mole ratio, then c = n ÷ V).`;
+      const unit = "mol dm⁻³";
+
+      const steps = [
+        `1. Convert volumes to dm³:`,
+        `   V(${acidKey}) = ${fmt(VAcid * 1000)} cm³ ÷ 1000 = ${VAcid} dm³`,
+        `   V(${baseKey}) = ${fmt(VBase * 1000)} cm³ ÷ 1000 = ${VBase} dm³`,
+        `2. Calculate moles of acid:`,
+        `   n(${acidKey}) = cV = ${cAcid} × ${VAcid} = ${roundDP(nAcid, 4)} mol`,
+        `3. Use mole ratio from the equation:`,
+        `   ${acidKey}: ${acid.coeff}  →  ${baseKey}: ${base.coeff}`,
+        `   n(${baseKey}) = n(${acidKey}) × ( ${base.coeff} ÷ ${acid.coeff} )`,
+        `                 = ${roundDP(nAcid, 4)} × ( ${base.coeff} ÷ ${acid.coeff} )`,
+        `                 = ${roundDP(nBase, 4)} mol`,
+        `4. Calculate concentration of ${baseKey}:`,
+        `   c(${baseKey}) = n ÷ V = ${roundDP(nBase, 4)} ÷ ${VBase} = ${answer} mol dm⁻³ (to 3 d.p.)`
+      ];
+
+      return {
+        type: "conc-conc",
+        reaction,
+        questionText,
+        meta,
+        unit,
+        correctValue: answer,
+        steps
+      };
+    }
+
+    // 5. Concentration → mass (amount of salt formed)
+    function generateConcMassQuestion(reaction, difficulty) {
+      if (!["hcl-naoh", "h2so4-naoh"].includes(reaction.id)) {
+        const suitable = reactions.filter(r => ["hcl-naoh", "h2so4-naoh"].includes(r.id));
+        reaction = choice(suitable);
+      }
+
+      let acidKey, saltKey;
+      if (reaction.id === "hcl-naoh") {
+        acidKey = "HCl";
+        saltKey = "NaCl";
+      } else {
+        acidKey = "H2SO4";
+        saltKey = "Na2SO4";
+      }
+
+      const acid = reaction.species[acidKey];
+      const salt = reaction.species[saltKey];
+
+      const cAcid = difficulty === "easy" ? choice([0.5, 1.0, 1.5]) : choice([0.75, 1.25, 1.8]);
+      const VAcid = difficulty === "easy" ? choice([0.020, 0.025, 0.030, 0.040]) : choice([0.018, 0.022, 0.035]);
+
+      const nAcid = cAcid * VAcid;
+      const nSalt = nAcid * (salt.coeff / acid.coeff);
+      const mSalt = nSalt * salt.molarMass;
+      const answer = roundDP(mSalt, 2);
+
+      const questionText = `${fmt(VAcid * 1000)} cm³ of ${fmt(cAcid)} mol dm⁻³ ${acidKey}(aq) reacts with excess base.\n` +
+        `Calculate the mass of ${saltKey}(aq) formed. Assume complete reaction.`;
+      const meta = `Concentration → mass (n = cV, mole ratio, then m = nM).`;
+      const unit = "g";
+
+      const steps = [
+        `1. Convert volume to dm³:`,
+        `   V(${acidKey}) = ${fmt(VAcid * 1000)} cm³ ÷ 1000 = ${VAcid} dm³`,
+        `2. Calculate moles of ${acidKey}:`,
+        `   n(${acidKey}) = cV = ${cAcid} × ${VAcid} = ${roundDP(nAcid, 4)} mol`,
+        `3. Use mole ratio to find moles of ${saltKey}:`,
+        `   ${acidKey}: ${acid.coeff}  →  ${saltKey}: ${salt.coeff}`,
+        `   n(${saltKey}) = n(${acidKey}) × ( ${salt.coeff} ÷ ${acid.coeff} )`,
+        `                 = ${roundDP(nAcid, 4)} × ( ${salt.coeff} ÷ ${acid.coeff} )`,
+        `                 = ${roundDP(nSalt, 4)} mol`,
+        `4. Convert moles of ${saltKey
