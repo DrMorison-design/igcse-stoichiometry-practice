@@ -2,14 +2,25 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Stoichiometry Practice – IGCSE</title>
   <style>
+    :root {
+      --primary: #2f8fda;
+      --muted: #666;
+      --card-bg: #ffffff;
+      --surface: #f5f5f5;
+      --success: #1b8a4a;
+      --danger: #c0392b;
+    }
+
     body {
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       max-width: 900px;
       margin: 0 auto;
       padding: 1.5rem;
-      background: #f5f5f5;
+      background: var(--surface);
+      color: #222;
     }
     h1 {
       font-size: 1.8rem;
@@ -21,7 +32,7 @@
       color: #555;
     }
     .card {
-      background: #ffffff;
+      background: var(--card-bg);
       border-radius: 0.75rem;
       padding: 1rem 1.2rem;
       margin-bottom: 1rem;
@@ -54,19 +65,27 @@
       color: #555;
       margin-bottom: 0.6rem;
     }
+
+    /* Responsive form controls */
     input[type="number"],
     input[type="text"] {
       padding: 0.3rem 0.5rem;
       border-radius: 0.4rem;
       border: 1px solid #ccc;
       font-size: 1rem;
+      box-sizing: border-box;
+      max-width: 100%;
     }
-    input[type="number"] {
+    /* Allow flexible widths in control rows */
+    .controls-row input[type="text"] {
+      min-width: 0;
+      flex: 1 1 180px;
+    }
+    .controls-row input[type="number"] {
       width: 160px;
+      flex: 0 0 160px;
     }
-    input[type="text"] {
-      width: 200px;
-    }
+
     .unit {
       margin-left: 0.2rem;
       font-size: 0.9rem;
@@ -83,7 +102,7 @@
       padding: 0.45rem 0.9rem;
       font-size: 0.9rem;
       cursor: pointer;
-      background: #2f8fda;
+      background: var(--primary);
       color: white;
     }
     button.secondary {
@@ -100,10 +119,10 @@
       font-size: 0.95rem;
     }
     .feedback.correct {
-      color: #1b8a4a;
+      color: var(--success);
     }
     .feedback.incorrect {
-      color: #c0392b;
+      color: var(--danger);
     }
     .solution-steps {
       margin-top: 0.5rem;
@@ -131,7 +150,7 @@
     }
     .note {
       font-size: 0.8rem;
-      color: #666;
+      color: var(--muted);
       margin-top: 0.3rem;
     }
     .pill {
@@ -174,6 +193,24 @@
       font-size: 0.75rem;
       font-weight: 600;
     }
+
+    /* Accessibility helper */
+    .sr-only {
+      position: absolute !important;
+      height: 1px; width: 1px;
+      overflow: hidden;
+      clip: rect(1px, 1px, 1px, 1px);
+      white-space: nowrap;
+    }
+
+    /* Player feedback */
+    .player-feedback {
+      margin-top: 0.5rem;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+    .player-feedback.success { color: var(--success); font-weight:600; }
+    .player-feedback.error { color: var(--danger); font-weight:600; }
   </style>
 </head>
 <body>
@@ -184,14 +221,112 @@
   </div>
 
   <!-- Player + analytics controls -->
-  <div class="card">
-    <div class="label">Player</div>
-    <div class="controls-row">
-      <input type="text" id="playerNameInput" placeholder="Enter your name or nickname">
-      <button id="setPlayerBtn">Set player</button>
+  <div class="card" aria-labelledby="playerLabel">
+    <div class="label" id="playerLabel">Player</div>
+    <div class="controls-row" role="group" aria-label="Player controls">
+      <label for="playerNameInput" class="sr-only">Player name</label>
+      <input type="text" id="playerNameInput" placeholder="Enter your name or nickname" maxlength="32" aria-describedby="playerHelp">
+      <div style="display:flex; gap:.5rem;">
+        <button id="setPlayerBtn">Set player</button>
+        <button id="clearPlayerBtn" class="secondary" type="button">Reset</button>
+      </div>
     </div>
-    <div class="small" id="currentPlayerLabel">Current player: <strong>Guest</strong></div>
-    <div class="note">
-      Leaderboard and stats are saved in this browser only (using localStorage).
-    </div>
+    <div class="small" id="currentPlayerLabel">Current player: <strong aria-live="polite">Guest</strong></div>
+    <div id="playerHelp" class="note">Leaderboard and stats are saved in this browser only (using localStorage).</div>
+    <div id="playerFeedback" class="player-feedback" aria-live="polite"></div>
   </div>
+
+  <!-- Remaining app content (questions, controls, results) goes here -->
+  <!-- ... -->
+
+  <noscript class="card">
+    <div class="label">JavaScript required</div>
+    <div class="description">This app needs JavaScript enabled to work. Please enable JavaScript in your browser.</div>
+  </noscript>
+
+  <script>
+    (function () {
+      const STORAGE_KEY = 'stoich.player';
+      const MAX_NAME_LENGTH = 32;
+
+      const inputEl = document.getElementById('playerNameInput');
+      const setBtn = document.getElementById('setPlayerBtn');
+      const clearBtn = document.getElementById('clearPlayerBtn');
+      const currentLabelStrong = document.querySelector('#currentPlayerLabel strong');
+      const feedbackEl = document.getElementById('playerFeedback');
+
+      function showFeedback(message, type) {
+        feedbackEl.textContent = message;
+        feedbackEl.className = 'player-feedback' + (type ? ' ' + type : '');
+      }
+
+      function sanitizeName(name) {
+        if (!name) return '';
+        // Normalize whitespace and strip problematic characters (simple)
+        return name.trim().replace(/\s+/g, ' ').slice(0, MAX_NAME_LENGTH);
+      }
+
+      function setPlayer(name) {
+        const sanitized = sanitizeName(name);
+        if (!sanitized) {
+          showFeedback('Please enter a name before setting player.', 'error');
+          return false;
+        }
+        try {
+          localStorage.setItem(STORAGE_KEY, sanitized);
+          currentLabelStrong.textContent = sanitized;
+          showFeedback('Player set: ' + sanitized, 'success');
+          return true;
+        } catch (err) {
+          console.error('Could not save player name', err);
+          showFeedback('Could not save player name (storage unavailable).', 'error');
+          return false;
+        }
+      }
+
+      function clearPlayer() {
+        try {
+          localStorage.removeItem(STORAGE_KEY);
+        } catch (err) {
+          console.warn('Failed to clear storage', err);
+        }
+        currentLabelStrong.textContent = 'Guest';
+        inputEl.value = '';
+        showFeedback('Player reset to Guest.');
+      }
+
+      setBtn.addEventListener('click', () => {
+        setPlayer(inputEl.value);
+      });
+
+      clearBtn.addEventListener('click', () => {
+        clearPlayer();
+      });
+
+      inputEl.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          setPlayer(inputEl.value);
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', () => {
+        let saved = null;
+        try {
+          saved = localStorage.getItem(STORAGE_KEY);
+        } catch (err) {
+          // ignore
+        }
+        if (saved) {
+          const value = sanitizeName(saved);
+          currentLabelStrong.textContent = value;
+          inputEl.value = value;
+          showFeedback('Loaded saved player: ' + value, 'success');
+        } else {
+          currentLabelStrong.textContent = 'Guest';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
