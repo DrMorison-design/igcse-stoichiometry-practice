@@ -1,243 +1,108 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Stoichiometry Practice – IGCSE</title>
   <style>
-    :root {
-      --primary: #2f8fda;
-      --muted: #666;
-      --card-bg: #ffffff;
-      --surface: #f5f5f5;
-      --success: #1b8a4a;
-      --danger: #c0392b;
+    :root{
+      --primary:#2f8fda;
+      --muted:#666;
+      --card-bg:#fff;
+      --surface:#f5f5f5;
+      --success:#1b8a4a;
+      --danger:#c0392b;
     }
-
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      max-width: 900px;
-      margin: 0 auto;
-      padding: 1.5rem;
-      background: var(--surface);
-      color: #222;
+    body{
+      font-family: system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+      max-width:900px;margin:0 auto;padding:1.5rem;background:var(--surface);color:#222;
     }
-    h1 {
-      font-size: 1.8rem;
-      margin-bottom: 0.3rem;
-    }
-    .tagline {
-      margin-bottom: 1rem;
-      font-size: 0.95rem;
-      color: #555;
-    }
-    .card {
-      background: var(--card-bg);
-      border-radius: 0.75rem;
-      padding: 1rem 1.2rem;
-      margin-bottom: 1rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-    }
-    .label {
-      font-size: 0.85rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.04em;
-      color: #555;
-      margin-bottom: 0.3rem;
-    }
-    .equation {
-      font-weight: 600;
-      font-size: 1.05rem;
-      margin-bottom: 0.3rem;
-    }
-    .description {
-      font-size: 0.9rem;
-      color: #555;
-      margin-bottom: 0.5rem;
-    }
-    .question-text {
-      font-size: 1rem;
-      margin-bottom: 0.2rem;
-    }
-    .question-meta {
-      font-size: 0.85rem;
-      color: #555;
-      margin-bottom: 0.6rem;
-    }
-
-    /* Responsive form controls */
-    input[type="number"],
-    input[type="text"] {
-      padding: 0.3rem 0.5rem;
-      border-radius: 0.4rem;
-      border: 1px solid #ccc;
-      font-size: 1rem;
-      box-sizing: border-box;
-      max-width: 100%;
-    }
-    /* Allow flexible widths in control rows */
-    .controls-row input[type="text"] {
-      min-width: 0;
-      flex: 1 1 180px;
-    }
-    .controls-row input[type="number"] {
-      width: 160px;
-      flex: 0 0 160px;
-    }
-
-    .unit {
-      margin-left: 0.2rem;
-      font-size: 0.9rem;
-    }
-    .buttons {
-      margin-top: 0.8rem;
-      display: flex;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    button {
-      border: none;
-      border-radius: 999px;
-      padding: 0.45rem 0.9rem;
-      font-size: 0.9rem;
-      cursor: pointer;
-      background: var(--primary);
-      color: white;
-    }
-    button.secondary {
-      background: #e0e0e0;
-      color: #333;
-    }
-    button:disabled {
-      cursor: not-allowed;
-      opacity: 0.6;
-    }
-    .feedback {
-      margin-top: 0.7rem;
-      font-weight: 600;
-      font-size: 0.95rem;
-    }
-    .feedback.correct {
-      color: var(--success);
-    }
-    .feedback.incorrect {
-      color: var(--danger);
-    }
-    .solution-steps {
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
-      line-height: 1.4;
-    }
-    .solution-steps p {
-      margin: 0.2rem 0;
-    }
-    .solution-steps strong {
-      font-weight: 600;
-    }
-    .controls-row {
-      margin-bottom: 0.5rem;
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 0.5rem;
-    }
-    select {
-      padding: 0.25rem 0.5rem;
-      border-radius: 0.4rem;
-      border: 1px solid #ccc;
-      font-size: 0.9rem;
-    }
-    .note {
-      font-size: 0.8rem;
-      color: var(--muted);
-      margin-top: 0.3rem;
-    }
-    .pill {
-      display: inline-block;
-      padding: 0.15rem 0.5rem;
-      border-radius: 999px;
-      background: #e8f2fc;
-      color: #1f4f91;
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-      margin-left: 0.3rem;
-    }
-    .small {
-      font-size: 0.85rem;
-      color: #555;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.85rem;
-      margin-top: 0.4rem;
-    }
-    th, td {
-      border-bottom: 1px solid #eee;
-      padding: 0.25rem 0.3rem;
-      text-align: left;
-    }
-    th {
-      font-weight: 600;
-      background: #f7f7f7;
-    }
-    .badge {
-      display: inline-block;
-      padding: 0.05rem 0.4rem;
-      border-radius: 999px;
-      background: #e9f7ef;
-      color: #1b8a4a;
-      font-size: 0.75rem;
-      font-weight: 600;
-    }
-
-    /* Accessibility helper */
-    .sr-only {
-      position: absolute !important;
-      height: 1px; width: 1px;
-      overflow: hidden;
-      clip: rect(1px, 1px, 1px, 1px);
-      white-space: nowrap;
-    }
-
-    /* Player feedback */
-    .player-feedback {
-      margin-top: 0.5rem;
-      font-size: 0.9rem;
-      color: var(--muted);
-    }
-    .player-feedback.success { color: var(--success); font-weight:600; }
-    .player-feedback.error { color: var(--danger); font-weight:600; }
+    h1{font-size:1.8rem;margin-bottom:.3rem;}
+    .tagline{margin-bottom:1rem;font-size:.95rem;color:#555;}
+    .card{background:var(--card-bg);border-radius:.75rem;padding:1rem 1.2rem;margin-bottom:1rem;box-shadow:0 2px 6px rgba(0,0,0,.08);}    
+    .label{font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:.3rem;}
+    .controls-row{margin-bottom:.5rem;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;}
+    input[type="text"],input[type="number"],select{padding:.3rem .5rem;border-radius:.4rem;border:1px solid #ccc;font-size:1rem;box-sizing:border-box;max-width:100%}
+    .controls-row input[type="text"]{flex:1 1 180px;min-width:0}
+    .controls-row input[type="number"]{flex:0 0 160px;width:160px}
+    .buttons{margin-top:.8rem;display:flex;gap:.5rem;flex-wrap:wrap}
+    button{border:none;border-radius:999px;padding:.45rem .9rem;font-size:.9rem;cursor:pointer;background:var(--primary);color:#fff}
+    button.secondary{background:#e0e0e0;color:#333}
+    button:disabled{cursor:not-allowed;opacity:.6}
+    .feedback{margin-top:.7rem;font-weight:600;font-size:.95rem}
+    .feedback.correct{color:var(--success)}
+    .feedback.incorrect{color:var(--danger)}
+    .solution-steps{margin-top:.5rem;font-size:.9rem;line-height:1.4}
+    .solution-steps p{margin:.2rem 0}
+    .note{font-size:.8rem;color:var(--muted);margin-top:.3rem}
+    .small{font-size:.85rem;color:#555}
+    table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.4rem}
+    th,td{border-bottom:1px solid #eee;padding:.25rem .3rem;text-align:left}
+    th{font-weight:600;background:#f7f7f7}
+    .sr-only{position:absolute!important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+    .muted{color:var(--muted)}
+    .player-feedback{margin-top:.5rem;font-size:.9rem;color:var(--muted)}
+    .player-feedback.success{color:var(--success);font-weight:600}
+    .player-feedback.error{color:var(--danger);font-weight:600}
   </style>
 </head>
 <body>
   <h1>Stoichiometry Practice</h1>
   <div class="tagline">
-    Year 9/10 IGCSE practice – mass ↔ mass, mass ↔ gas volume, gas ↔ gas, concentration questions.  
+    Year 9/10 IGCSE practice – mass ↔ mass, mass ↔ gas volume, gas ↔ gas, concentration questions.
     Enter your answer to 2–3 s.f. The app accepts small rounding differences.
   </div>
 
-  <!-- Player + analytics controls -->
+  <!-- Player controls -->
   <div class="card" aria-labelledby="playerLabel">
     <div class="label" id="playerLabel">Player</div>
     <div class="controls-row" role="group" aria-label="Player controls">
       <label for="playerNameInput" class="sr-only">Player name</label>
-      <input type="text" id="playerNameInput" placeholder="Enter your name or nickname" maxlength="32" aria-describedby="playerHelp">
-      <div style="display:flex; gap:.5rem;">
+      <input id="playerNameInput" type="text" placeholder="Enter your name or nickname" maxlength="32" aria-describedby="playerHelp">
+      <div style="display:flex;gap:.5rem">
         <button id="setPlayerBtn">Set player</button>
-        <button id="clearPlayerBtn" class="secondary" type="button">Reset</button>
+        <button id="resetPlayerBtn" class="secondary" type="button">Reset</button>
       </div>
     </div>
     <div class="small" id="currentPlayerLabel">Current player: <strong aria-live="polite">Guest</strong></div>
-    <div id="playerHelp" class="note">Leaderboard and stats are saved in this browser only (using localStorage).</div>
+    <div id="playerHelp" class="note">Leaderboard and stats are saved in this browser only (localStorage).</div>
     <div id="playerFeedback" class="player-feedback" aria-live="polite"></div>
   </div>
 
-  <!-- Remaining app content (questions, controls, results) goes here -->
-  <!-- ... -->
+  <!-- Question card -->
+  <div class="card">
+    <div class="label">Question</div>
+    <div id="questionArea">
+      <div class="question-text" id="questionText">Click "New question" to begin.</div>
+      <div class="question-meta muted" id="questionMeta"></div>
+
+      <div class="controls-row" style="margin-top:.6rem">
+        <label for="answerInput" class="sr-only">Your answer</label>
+        <input id="answerInput" type="number" placeholder="Enter answer" step="any" >
+        <span class="unit" id="answerUnit"></span>
+        <div style="margin-left:auto;display:flex;gap:.5rem">
+          <button id="checkAnswerBtn">Check</button>
+          <button id="newQuestionBtn" class="secondary" type="button">New question</button>
+        </div>
+      </div>
+
+      <div id="answerFeedback" class="feedback" aria-live="polite"></div>
+      <div id="solutionSteps" class="solution-steps" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="card">
+    <div class="label">Leaderboard</div>
+    <div class="small">Top players (this browser)</div>
+    <table id="leaderboardTable" aria-live="polite">
+      <thead><tr><th>Player</th><th>Score</th><th>Attempts</th><th>Last</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div style="margin-top:.6rem;display:flex;gap:.5rem">
+      <button id="clearLeaderboardBtn" class="secondary">Clear leaderboard</button>
+    </div>
+  </div>
 
   <noscript class="card">
     <div class="label">JavaScript required</div>
@@ -245,88 +110,349 @@
   </noscript>
 
   <script>
-    (function () {
-      const STORAGE_KEY = 'stoich.player';
-      const MAX_NAME_LENGTH = 32;
+  (function(){
+    /* Storage keys */
+    const PLAYER_KEY = 'stoich.player';
+    const LEADERBOARD_KEY = 'stoich.leaderboard';
 
-      const inputEl = document.getElementById('playerNameInput');
-      const setBtn = document.getElementById('setPlayerBtn');
-      const clearBtn = document.getElementById('clearPlayerBtn');
-      const currentLabelStrong = document.querySelector('#currentPlayerLabel strong');
-      const feedbackEl = document.getElementById('playerFeedback');
+    /* Reaction definitions and compute functions */
+    const REACTIONS = [
+      {
+        id: 'water-formation',
+        eq: '2 H₂ + O₂ → 2 H₂O',
+        desc: 'How many grams of H₂O are formed from X g of H₂?',
+        computeMassFromH2: (mH2) => {
+          const M_H2 = 2.016;
+          const M_H2O = 18.015;
+          const nH2 = mH2 / M_H2;
+          const nH2O = nH2; // 1:1 here (2:2)
+          const mH2O = nH2O * M_H2O;
+          const steps = [
+            `moles H₂ = ${mH2.toFixed(3)} / ${M_H2} = ${nH2.toFixed(4)} mol`,
+            `moles H₂O = moles H₂ (1:1) = ${nH2O.toFixed(4)} mol`,
+            `mass H₂O = ${nH2O.toFixed(4)} × ${M_H2O} = ${mH2O.toFixed(4)} g`
+          ];
+          return { value: mH2O, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'co2-formation',
+        eq: 'C + O₂ → CO₂',
+        desc: 'How many grams of CO₂ are formed from X g of C?',
+        computeMassFromC: (mC) => {
+          const M_C = 12.01;
+          const M_CO2 = 44.01;
+          const nC = mC / M_C;
+          const nCO2 = nC;
+          const mCO2 = nCO2 * M_CO2;
+          const steps = [
+            `moles C = ${mC.toFixed(3)} / ${M_C} = ${nC.toFixed(4)} mol`,
+            `moles CO₂ = moles C (1:1) = ${nCO2.toFixed(4)} mol`,
+            `mass CO₂ = ${nCO2.toFixed(4)} × ${M_CO2} = ${mCO2.toFixed(4)} g`
+          ];
+          return { value: mCO2, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'concentration',
+        eq: 'concentration',
+        desc: 'What is the concentration in g L⁻¹ when X g of NaCl is dissolved in V L?',
+        computeConcentration: (mass_g, volume_L) => {
+          const conc = mass_g / volume_L;
+          const steps = [
+            `concentration = ${mass_g.toFixed(3)} g / ${volume_L.toFixed(3)} L = ${conc.toFixed(4)} g L⁻¹`
+          ];
+          return { value: conc, unit: 'g L⁻¹', steps };
+        }
+      }
+    ];
 
-      function showFeedback(message, type) {
-        feedbackEl.textContent = message;
-        feedbackEl.className = 'player-feedback' + (type ? ' ' + type : '');
+    /* DOM elements */
+    const playerInput = document.getElementById('playerNameInput');
+    const setPlayerBtn = document.getElementById('setPlayerBtn');
+    const resetPlayerBtn = document.getElementById('resetPlayerBtn');
+    const currentPlayerEl = document.querySelector('#currentPlayerLabel strong');
+    const playerFeedbackEl = document.getElementById('playerFeedback');
+
+    const questionTextEl = document.getElementById('questionText');
+    const questionMetaEl = document.getElementById('questionMeta');
+    const answerInput = document.getElementById('answerInput');
+    const answerUnitEl = document.getElementById('answerUnit');
+    const checkAnswerBtn = document.getElementById('checkAnswerBtn');
+    const newQuestionBtn = document.getElementById('newQuestionBtn');
+    const answerFeedbackEl = document.getElementById('answerFeedback');
+    const solutionStepsEl = document.getElementById('solutionSteps');
+
+    const leaderboardBody = document.querySelector('#leaderboardTable tbody');
+    const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
+
+    /* State */
+    let currentQuestion = null; // {type, params, correctValue, unit, steps}
+    let lastResult = null;
+
+    /* Utilities */
+    function escapeHtml(s){ return String(s).replace(/[&<>\\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+    function roundToSignificantFigures(num, sig) {
+      if (!isFinite(num) || num === 0) return 0;
+      const mult = Math.pow(10, sig - Math.ceil(Math.log10(Math.abs(num))));
+      return Math.round(num * mult) / mult;
+    }
+
+    function toSignificantString(num, sig) {
+      if (!isFinite(num)) return String(num);
+      // toPrecision returns in either exponential or fixed as needed
+      return Number(num).toPrecision(sig).replace(/(?:\.0+|([\.]\d+?)0+)$/, '$1');
+    }
+
+    function relativeError(a,b){
+      if (!isFinite(a) || !isFinite(b) || b === 0) return Math.abs(a-b);
+      return Math.abs(a-b)/Math.abs(b);
+    }
+
+    /* Acceptance criteria:
+       - Accept if user's value is within relative error threshold (2%)
+       OR
+       - Accept if user's value rounded to 2 or 3 s.f. equals correct value rounded to the same s.f.
+       We keep both checks for forgiving rounding differences.
+    */
+    function isAcceptable(userValue, correctValue){
+      if (!isFinite(userValue) || !isFinite(correctValue)) return false;
+      const relErr = relativeError(userValue, correctValue);
+      if (relErr <= 0.02) return {ok:true, reason:'within 2% relative error', relErr};
+
+      const correct2 = roundToSignificantFigures(correctValue, 2);
+      const correct3 = roundToSignificantFigures(correctValue, 3);
+      const user2 = roundToSignificantFigures(userValue, 2);
+      const user3 = roundToSignificantFigures(userValue, 3);
+
+      if (user2 === correct2) return {ok:true, reason:'matches 2 s.f.', relErr};
+      if (user3 === correct3) return {ok:false, reason:'outside tolerance', relErr};
+      return {ok:false, reason:'outside tolerance', relErr};
+    }
+
+    /* Leaderboard storage */
+    function loadLeaderboard(){
+      try { const raw = localStorage.getItem(LEADERBOARD_KEY); return raw ? JSON.parse(raw) : []; } catch(e){ return []; }
+    }
+    function saveLeaderboard(list){
+      try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list)); return true; } catch(e){ return false; }
+    }
+
+    function renderLeaderboard(){
+      const list = loadLeaderboard();
+      list.sort((a,b) => (b.score - a.score) || (a.attempts - b.attempts) || (new Date(b.last) - new Date(a.last)));
+      leaderboardBody.innerHTML = '';
+      if (list.length === 0){
+        const tr = document.createElement('tr');
+        tr.innerHTML = '<td colspan="4" class="muted">No entries yet</td>';
+        leaderboardBody.appendChild(tr);
+        return;
+      }
+      for (const entry of list.slice(0,50)){
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${escapeHtml(entry.name)}</td><td>${entry.score}</td><td>${entry.attempts}</td><td class="muted">${new Date(entry.last).toLocaleString()}</td>`;
+        leaderboardBody.appendChild(tr);
+      }
+    }
+
+    function recordResult(playerName, deltaScore){
+      if (!playerName) return;
+      const list = loadLeaderboard();
+      const now = new Date().toISOString();
+      let entry = list.find(e => e.name === playerName);
+      if (!entry){
+        entry = { name: playerName, score: 0, attempts: 0, last: now };
+        list.push(entry);
+      }
+      entry.score += deltaScore;
+      entry.attempts += 1;
+      entry.last = now;
+      saveLeaderboard(list);
+      renderLeaderboard();
+    }
+
+    /* Player handling */
+    function sanitizeName(n){ return n ? String(n).trim().replace(/\s+/g,' ').slice(0,32) : ''; }
+
+    function loadPlayer(){
+      try { return localStorage.getItem(PLAYER_KEY); } catch(e){ return null; }
+    }
+    function savePlayer(name){
+      try { localStorage.setItem(PLAYER_KEY, name); return true; } catch(e){ return false; }
+    }
+
+    function setPlayer(name){
+      const s = sanitizeName(name);
+      if (!s){
+        playerFeedbackEl.textContent = 'Please enter a name.';
+        playerFeedbackEl.className = 'player-feedback error';
+        return;
+      }
+      if (!savePlayer(s)){ 
+        playerFeedbackEl.textContent = 'Could not save player (storage unavailable).';
+        playerFeedbackEl.className = 'player-feedback error';
+        return;
+      }
+      currentPlayerEl.textContent = s;
+      playerFeedbackEl.textContent = 'Player set: ' + s;
+      playerFeedbackEl.className = 'player-feedback success';
+      renderLeaderboard();
+    }
+
+    function resetPlayer(){
+      try { localStorage.removeItem(PLAYER_KEY); } catch(e){}
+      currentPlayerEl.textContent = 'Guest';
+      playerInput.value = '';
+      playerFeedbackEl.textContent = 'Player reset to Guest.';
+      playerFeedbackEl.className = 'player-feedback';
+    }
+
+    /* Question generation */
+    function randRange(min,max,step=1){
+      const choices = Math.floor((max - min)/step) + 1;
+      return min + Math.floor(Math.random()*choices)*step;
+    }
+
+    function newQuestion(){
+      // Randomly pick a question type
+      const choice = Math.floor(Math.random()*3);
+      answerFeedbackEl.textContent = '';
+      solutionStepsEl.style.display = 'none';
+      solutionStepsEl.innerHTML = '';
+      answerInput.value = '';
+
+      if (choice === 0){
+        // water formation: mass of H2 between 2 and 50 g (not too small)
+        const mH2 = Number((Math.random()*(48) + 2).toFixed(2));
+        const info = REACTIONS[0].computeMassFromH2(mH2);
+        currentQuestion = {
+          type: 'water-formation',
+          prompt: `How many grams of H₂O are formed from ${mH2} g of H₂?`,
+          correct: info.value,
+          unit: info.unit,
+          steps: info.steps
+        };
+      } else if (choice === 1){
+        // CO2 formation: mass of C between 1 and 40 g
+        const mC = Number((Math.random()*(39) + 1).toFixed(2));
+        const info = REACTIONS[1].computeMassFromC(mC);
+        currentQuestion = {
+          type: 'co2-formation',
+          prompt: `How many grams of CO₂ are formed from ${mC} g of C?`,
+          correct: info.value,
+          unit: info.unit,
+          steps: info.steps
+        };
+      } else {
+        // concentration: mass between 1 and 20 g, volume between 0.1 and 2.0 L
+        const m = Number((Math.random()*(19) + 1).toFixed(2));
+        const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
+        const info = REACTIONS[2].computeConcentration(m,v);
+        currentQuestion = {
+          type: 'concentration',
+          prompt: `What is the concentration (g L⁻¹) when ${m} g of NaCl is dissolved in ${v} L?`,
+          correct: info.value,
+          unit: info.unit,
+          steps: info.steps
+        };
       }
 
-      function sanitizeName(name) {
-        if (!name) return '';
-        // Normalize whitespace and strip problematic characters (simple)
-        return name.trim().replace(/\s+/g, ' ').slice(0, MAX_NAME_LENGTH);
+      questionTextEl.textContent = currentQuestion.prompt;
+      questionMetaEl.textContent = '';
+      answerUnitEl.textContent = currentQuestion.unit ? currentQuestion.unit : '';
+      solutionStepsEl.style.display = 'none';
+      lastResult = null;
+    }
+
+    /* Answer checking */
+    function checkAnswer(){
+      if (!currentQuestion){
+        answerFeedbackEl.textContent = 'No question: click New question.';
+        answerFeedbackEl.className = 'feedback';
+        return;
+      }
+      const raw = answerInput.value;
+      if (raw === '' || raw === null){
+        answerFeedbackEl.textContent = 'Enter a numeric answer.';
+        answerFeedbackEl.className = 'feedback incorrect';
+        return;
+      }
+      const userVal = Number(raw);
+      if (!isFinite(userVal)){ 
+        answerFeedbackEl.textContent = 'Enter a valid number.';
+        answerFeedbackEl.className = 'feedback incorrect';
+        return;
       }
 
-      function setPlayer(name) {
-        const sanitized = sanitizeName(name);
-        if (!sanitized) {
-          showFeedback('Please enter a name before setting player.', 'error');
-          return false;
-        }
-        try {
-          localStorage.setItem(STORAGE_KEY, sanitized);
-          currentLabelStrong.textContent = sanitized;
-          showFeedback('Player set: ' + sanitized, 'success');
-          return true;
-        } catch (err) {
-          console.error('Could not save player name', err);
-          showFeedback('Could not save player name (storage unavailable).', 'error');
-          return false;
-        }
+      const correctVal = currentQuestion.correct;
+      const result = isAcceptable(userVal, correctVal);
+
+      // Build feedback message
+      const correct2 = toSignificantString(correctVal, 2);
+      const correct3 = toSignificantString(correctVal, 3);
+      const user2 = toSignificantString(userVal, 2);
+      const user3 = toSignificantString(userVal, 3);
+
+      if (result.ok){
+        answerFeedbackEl.textContent = `Correct — ${result.reason}. (Correct: ${correct3} or ${correct2} ${currentQuestion.unit})`;
+        answerFeedbackEl.className = 'feedback correct';
+        solutionStepsEl.innerHTML = currentQuestion.steps.map(s => `<p>${escapeHtml(s)}</p>`).join('');
+        solutionStepsEl.style.display = 'block';
+
+        // scoring: +10 for correct
+        const player = loadPlayer() || 'Guest';
+        recordResult(player, 10);
+        lastResult = { correct: true, player };
+      } else {
+        answerFeedbackEl.textContent = `Not correct. Your answer (3 s.f.) ${user3} vs correct (3 s.f.) ${correct3}.`;
+        answerFeedbackEl.className = 'feedback incorrect';
+        solutionStepsEl.innerHTML = currentQuestion.steps.map(s => `<p>${escapeHtml(s)}</p>`).join('');
+        solutionStepsEl.style.display = 'block';
+
+        // scoring: -2 for incorrect (but don't drop below 0 — keep leaderboard entry logic simple)
+        const player = loadPlayer() || 'Guest';
+        recordResult(player, -2);
+        lastResult = { correct: false, player };
+      }
+    }
+
+    /* Initialization */
+    function init(){
+      // attach handlers
+      setPlayerBtn.addEventListener('click', ()=> setPlayer(playerInput.value));
+      resetPlayerBtn.addEventListener('click', resetPlayer);
+      newQuestionBtn.addEventListener('click', newQuestion);
+      checkAnswerBtn.addEventListener('click', checkAnswer);
+
+      playerInput.addEventListener('keydown', (e)=> { if (e.key === 'Enter') setPlayer(playerInput.value); });
+      answerInput.addEventListener('keydown', (e)=> { if (e.key === 'Enter') checkAnswer(); });
+
+      clearLeaderboardBtn.addEventListener('click', ()=>{
+        if (confirm('Clear leaderboard in this browser?')){ saveLeaderboard([]); renderLeaderboard(); }
+      });
+
+      // load player
+      const saved = loadPlayer();
+      if (saved){
+        const s = sanitizeName(saved);
+        currentPlayerEl.textContent = s;
+        playerInput.value = s;
+        playerFeedbackEl.textContent = 'Loaded saved player: ' + s;
+        playerFeedbackEl.className = 'player-feedback success';
+      } else {
+        currentPlayerEl.textContent = 'Guest';
       }
 
-      function clearPlayer() {
-        try {
-          localStorage.removeItem(STORAGE_KEY);
-        } catch (err) {
-          console.warn('Failed to clear storage', err);
-        }
-        currentLabelStrong.textContent = 'Guest';
-        inputEl.value = '';
-        showFeedback('Player reset to Guest.');
-      }
+      renderLeaderboard();
+    }
 
-      setBtn.addEventListener('click', () => {
-        setPlayer(inputEl.value);
-      });
+    init();
 
-      clearBtn.addEventListener('click', () => {
-        clearPlayer();
-      });
+    // expose for debug (optional)
+    window._stoich = { newQuestion, checkAnswer, REACTIONS };
 
-      inputEl.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-          e.preventDefault();
-          setPlayer(inputEl.value);
-        }
-      });
-
-      document.addEventListener('DOMContentLoaded', () => {
-        let saved = null;
-        try {
-          saved = localStorage.getItem(STORAGE_KEY);
-        } catch (err) {
-          // ignore
-        }
-        if (saved) {
-          const value = sanitizeName(saved);
-          currentLabelStrong.textContent = value;
-          inputEl.value = value;
-          showFeedback('Loaded saved player: ' + value, 'success');
-        } else {
-          currentLabelStrong.textContent = 'Guest';
-        }
-      });
-    })();
+  })();
   </script>
 </body>
 </html>
