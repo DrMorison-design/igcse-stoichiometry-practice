@@ -72,6 +72,22 @@
   <!-- Question card -->
   <div class="card">
     <div class="label">Question</div>
+
+    <div class="controls-row" style="align-items:center" role="group" aria-label="Question type">
+      <label for="questionTypeSelect" class="sr-only">Question type</label>
+      <select id="questionTypeSelect" aria-label="Choose question type">
+        <option value="random">Random</option>
+        <option value="mass-mass">Mass → Mass</option>
+        <option value="mass-gas">Mass → Gas volume</option>
+        <option value="gas-gas">Gas → Gas (volume ratios)</option>
+        <option value="conc-gpl">Concentration (g L⁻¹)</option>
+        <option value="conc-mol">Concentration (mol L⁻¹)</option>
+      </select>
+      <div style="margin-left:auto;display:flex;gap:.5rem">
+        <button id="newQuestionBtn" class="secondary" type="button">New question</button>
+      </div>
+    </div>
+
     <div id="questionArea">
       <div class="question-text" id="questionText">Click "New question" to begin.</div>
       <div class="question-meta muted" id="questionMeta"></div>
@@ -82,7 +98,6 @@
         <span class="unit" id="answerUnit"></span>
         <div style="margin-left:auto;display:flex;gap:.5rem">
           <button id="checkAnswerBtn">Check</button>
-          <button id="newQuestionBtn" class="secondary" type="button">New question</button>
         </div>
       </div>
 
@@ -115,6 +130,10 @@
     const PLAYER_KEY = 'stoich.player';
     const LEADERBOARD_KEY = 'stoich.leaderboard';
 
+    /* Constants */
+    const MOLAR_VOLUME = 24.0; // L mol⁻¹ (approx at 25°C) — used for gas volume questions
+    const M_NaCl = 58.44;
+
     /* Reaction definitions and compute functions */
     const REACTIONS = [
       {
@@ -125,20 +144,31 @@
           const M_H2 = 2.016;
           const M_H2O = 18.015;
           const nH2 = mH2 / M_H2;
-          const nH2O = nH2; // 1:1 here (2:2)
+          const nH2O = nH2; // 2 H2 -> 2 H2O (1:1)
           const mH2O = nH2O * M_H2O;
           const steps = [
+            `Balanced equation: ${this ? this.eq : '2 H₂ + O₂ → 2 H₂O'}`,
             `moles H₂ = ${mH2.toFixed(3)} / ${M_H2} = ${nH2.toFixed(4)} mol`,
             `moles H₂O = moles H₂ (1:1) = ${nH2O.toFixed(4)} mol`,
             `mass H₂O = ${nH2O.toFixed(4)} × ${M_H2O} = ${mH2O.toFixed(4)} g`
           ];
           return { value: mH2O, unit: 'g', steps };
+        },
+        // gas-gas ratio example: what volume of O2 reacts with X L H2? (2 H2 : 1 O2)
+        computeO2FromH2Volume: (vH2) => {
+          const vO2 = vH2 / 2; // volumes proportional to moles for gases under same conditions
+          const steps = [
+            `Balanced equation: 2 H₂ + O₂ → 2 H₂O`,
+            `Volume ratio H₂ : O₂ = 2 : 1`,
+            `Volume O₂ = ${vH2.toFixed(3)} L × (1/2) = ${vO2.toFixed(3)} L`
+          ];
+          return { value: vO2, unit: 'L', steps };
         }
       },
       {
         id: 'co2-formation',
         eq: 'C + O₂ → CO₂',
-        desc: 'How many grams of CO₂ are formed from X g of C?',
+        desc: 'How many grams (or litres) of CO₂ are formed from X g of C?',
         computeMassFromC: (mC) => {
           const M_C = 12.01;
           const M_CO2 = 44.01;
@@ -146,23 +176,46 @@
           const nCO2 = nC;
           const mCO2 = nCO2 * M_CO2;
           const steps = [
+            `Balanced equation: ${this ? this.eq : 'C + O₂ → CO₂'}`,
             `moles C = ${mC.toFixed(3)} / ${M_C} = ${nC.toFixed(4)} mol`,
             `moles CO₂ = moles C (1:1) = ${nCO2.toFixed(4)} mol`,
             `mass CO₂ = ${nCO2.toFixed(4)} × ${M_CO2} = ${mCO2.toFixed(4)} g`
           ];
           return { value: mCO2, unit: 'g', steps };
+        },
+        computeVolumeCO2FromC: (mC) => {
+          const M_C = 12.01;
+          const nC = mC / M_C;
+          const nCO2 = nC;
+          const vol = nCO2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: C + O₂ → CO₂`,
+            `moles C = ${mC.toFixed(3)} / ${M_C} = ${nC.toFixed(4)} mol`,
+            `moles CO₂ = moles C (1:1) = ${nCO2.toFixed(4)} mol`,
+            `volume CO₂ = ${nCO2.toFixed(4)} × ${MOLAR_VOLUME} = ${vol.toFixed(4)} L`
+          ];
+          return { value: vol, unit: 'L', steps };
         }
       },
       {
         id: 'concentration',
-        eq: 'concentration',
-        desc: 'What is the concentration in g L⁻¹ when X g of NaCl is dissolved in V L?',
-        computeConcentration: (mass_g, volume_L) => {
+        eq: '— (dissolving)',
+        desc: 'Concentration questions (g L⁻¹ or mol L⁻¹)',
+        computeConcentration_g_per_L: (mass_g, volume_L) => {
           const conc = mass_g / volume_L;
           const steps = [
             `concentration = ${mass_g.toFixed(3)} g / ${volume_L.toFixed(3)} L = ${conc.toFixed(4)} g L⁻¹`
           ];
           return { value: conc, unit: 'g L⁻¹', steps };
+        },
+        computeConcentration_mol_per_L: (mass_g, volume_L, formulaMass=M_NaCl) => {
+          const moles = mass_g / formulaMass;
+          const conc = moles / volume_L;
+          const steps = [
+            `moles solute = ${mass_g.toFixed(3)} / ${formulaMass} = ${moles.toFixed(4)} mol`,
+            `concentration = ${moles.toFixed(4)} mol / ${volume_L.toFixed(3)} L = ${conc.toFixed(4)} mol L⁻¹`
+          ];
+          return { value: conc, unit: 'mol L⁻¹', steps };
         }
       }
     ];
@@ -174,6 +227,7 @@
     const currentPlayerEl = document.querySelector('#currentPlayerLabel strong');
     const playerFeedbackEl = document.getElementById('playerFeedback');
 
+    const questionTypeSelect = document.getElementById('questionTypeSelect');
     const questionTextEl = document.getElementById('questionText');
     const questionMetaEl = document.getElementById('questionMeta');
     const answerInput = document.getElementById('answerInput');
@@ -187,11 +241,11 @@
     const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
 
     /* State */
-    let currentQuestion = null; // {type, params, correctValue, unit, steps}
+    let currentQuestion = null; // {type, params, correctValue, unit, steps, eq?}
     let lastResult = null;
 
     /* Utilities */
-    function escapeHtml(s){ return String(s).replace(/[&<>\\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function escapeHtml(s){ return String(s).replace(/[&<>\\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
 
     function roundToSignificantFigures(num, sig) {
       if (!isFinite(num) || num === 0) return 0;
@@ -214,7 +268,6 @@
        - Accept if user's value is within relative error threshold (2%)
        OR
        - Accept if user's value rounded to 2 or 3 s.f. equals correct value rounded to the same s.f.
-       We keep both checks for forgiving rounding differences.
     */
     function isAcceptable(userValue, correctValue){
       if (!isFinite(userValue) || !isFinite(correctValue)) return false;
@@ -273,7 +326,7 @@
     }
 
     /* Player handling */
-    function sanitizeName(n){ return n ? String(n).trim().replace(/\s+/g,' ').slice(0,32) : ''; }
+    function sanitizeName(n){ return n ? String(n).trim().replace(/\s+/g,' ') : ''; }
 
     function loadPlayer(){
       try { return localStorage.getItem(PLAYER_KEY); } catch(e){ return null; }
@@ -289,7 +342,7 @@
         playerFeedbackEl.className = 'player-feedback error';
         return;
       }
-      if (!savePlayer(s)){ 
+      if (!savePlayer(s)){
         playerFeedbackEl.textContent = 'Could not save player (storage unavailable).';
         playerFeedbackEl.className = 'player-feedback error';
         return;
@@ -308,58 +361,126 @@
       playerFeedbackEl.className = 'player-feedback';
     }
 
-    /* Question generation */
+    /* Question generation helpers */
     function randRange(min,max,step=1){
       const choices = Math.floor((max - min)/step) + 1;
       return min + Math.floor(Math.random()*choices)*step;
     }
 
+    function pickReactionForType(type){
+      // choose a reaction that supports the requested question type
+      const pool = [];
+      if (type === 'mass-mass'){
+        pool.push(REACTIONS.find(r=> r.id === 'water-formation'));
+        pool.push(REACTIONS.find(r=> r.id === 'co2-formation'));
+      } else if (type === 'mass-gas'){
+        pool.push(REACTIONS.find(r=> r.id === 'co2-formation'));
+      } else if (type === 'gas-gas'){
+        pool.push(REACTIONS.find(r=> r.id === 'water-formation'));
+      }
+      // fallback to any
+      return pool.filter(Boolean);
+    }
+
+    /* New question generator */
     function newQuestion(){
-      // Randomly pick a question type
-      const choice = Math.floor(Math.random()*3);
+      // Determine requested type from select
+      const selected = questionTypeSelect.value || 'random';
       answerFeedbackEl.textContent = '';
       solutionStepsEl.style.display = 'none';
       solutionStepsEl.innerHTML = '';
       answerInput.value = '';
+      questionMetaEl.textContent = '';
 
-      if (choice === 0){
-        // water formation: mass of H2 between 2 and 50 g (not too small)
-        const mH2 = Number((Math.random()*(48) + 2).toFixed(2));
-        const info = REACTIONS[0].computeMassFromH2(mH2);
-        currentQuestion = {
-          type: 'water-formation',
-          prompt: `How many grams of H₂O are formed from ${mH2} g of H₂?`,
-          correct: info.value,
-          unit: info.unit,
-          steps: info.steps
-        };
-      } else if (choice === 1){
-        // CO2 formation: mass of C between 1 and 40 g
+      // For random, pick uniformly among implemented types
+      const typeChoice = (selected === 'random') ? ['mass-mass','mass-gas','gas-gas','conc-gpl','conc-mol'][Math.floor(Math.random()*5)] : selected;
+
+      if (typeChoice === 'mass-mass'){
+        // randomly choose between water and CO2 mass→mass
+        const reactions = pickReactionForType('mass-mass');
+        const reaction = reactions[Math.floor(Math.random()*reactions.length)];
+        if (reaction.id === 'water-formation'){
+          const mH2 = Number((Math.random()*(48) + 2).toFixed(2));
+          const info = REACTIONS[0].computeMassFromH2(mH2);
+          currentQuestion = {
+            type: 'mass-mass',
+            prompt: `How many grams of H₂O are formed from ${mH2} g of H₂?`,
+            correct: info.value,
+            unit: info.unit,
+            steps: info.steps,
+            eq: REACTIONS[0].eq
+          };
+        } else { // co2
+          const mC = Number((Math.random()*(39) + 1).toFixed(2));
+          const info = REACTIONS[1].computeMassFromC(mC);
+          currentQuestion = {
+            type: 'mass-mass',
+            prompt: `How many grams of CO₂ are formed from ${mC} g of C?`,
+            correct: info.value,
+            unit: info.unit,
+            steps: info.steps,
+            eq: REACTIONS[1].eq
+          };
+        }
+      } else if (typeChoice === 'mass-gas'){
+        // CO2 volume from mass of carbon
         const mC = Number((Math.random()*(39) + 1).toFixed(2));
-        const info = REACTIONS[1].computeMassFromC(mC);
+        const info = REACTIONS[1].computeVolumeCO2FromC(mC);
         currentQuestion = {
-          type: 'co2-formation',
-          prompt: `How many grams of CO₂ are formed from ${mC} g of C?`,
+          type: 'mass-gas',
+          prompt: `What volume (L) of CO₂ is formed from ${mC} g of C? (use ${MOLAR_VOLUME} L mol⁻¹)`,
           correct: info.value,
           unit: info.unit,
-          steps: info.steps
+          steps: info.steps,
+          eq: REACTIONS[1].eq
         };
-      } else {
-        // concentration: mass between 1 and 20 g, volume between 0.1 and 2.0 L
+      } else if (typeChoice === 'gas-gas'){
+        // volume of O2 needed for X L H2
+        const vH2 = Number((Math.random()*(9) + 1).toFixed(2)); // 1–10 L
+        const info = REACTIONS[0].computeO2FromH2Volume(vH2);
+        currentQuestion = {
+          type: 'gas-gas',
+          prompt: `What volume (L) of O₂ is required to react with ${vH2} L of H₂ (same conditions)?`,
+          correct: info.value,
+          unit: info.unit,
+          steps: info.steps,
+          eq: REACTIONS[0].eq
+        };
+      } else if (typeChoice === 'conc-gpl'){
         const m = Number((Math.random()*(19) + 1).toFixed(2));
         const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
-        const info = REACTIONS[2].computeConcentration(m,v);
+        const info = REACTIONS[2].computeConcentration_g_per_L(m,v);
         currentQuestion = {
-          type: 'concentration',
+          type: 'conc-gpl',
           prompt: `What is the concentration (g L⁻¹) when ${m} g of NaCl is dissolved in ${v} L?`,
           correct: info.value,
           unit: info.unit,
-          steps: info.steps
+          steps: info.steps,
+          eq: REACTIONS[2].eq
         };
+      } else if (typeChoice === 'conc-mol'){
+        const m = Number((Math.random()*(19) + 1).toFixed(2));
+        const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
+        const info = REACTIONS[2].computeConcentration_mol_per_L(m,v,M_NaCl);
+        currentQuestion = {
+          type: 'conc-mol',
+          prompt: `What is the concentration (mol L⁻¹) when ${m} g of NaCl (M = ${M_NaCl}) is dissolved in ${v} L?`,
+          correct: info.value,
+          unit: info.unit,
+          steps: info.steps,
+          eq: REACTIONS[2].eq
+        };
+      } else {
+        // fallback to random mass-mass
+        return newQuestion();
       }
 
       questionTextEl.textContent = currentQuestion.prompt;
-      questionMetaEl.textContent = '';
+      if (currentQuestion.eq){
+        questionMetaEl.textContent = 'Balanced equation: ' + currentQuestion.eq;
+      } else {
+        questionMetaEl.textContent = '';
+      }
       answerUnitEl.textContent = currentQuestion.unit ? currentQuestion.unit : '';
       solutionStepsEl.style.display = 'none';
       lastResult = null;
@@ -379,7 +500,7 @@
         return;
       }
       const userVal = Number(raw);
-      if (!isFinite(userVal)){ 
+      if (!isFinite(userVal)){
         answerFeedbackEl.textContent = 'Enter a valid number.';
         answerFeedbackEl.className = 'feedback incorrect';
         return;
@@ -410,7 +531,7 @@
         solutionStepsEl.innerHTML = currentQuestion.steps.map(s => `<p>${escapeHtml(s)}</p>`).join('');
         solutionStepsEl.style.display = 'block';
 
-        // scoring: -2 for incorrect (but don't drop below 0 — keep leaderboard entry logic simple)
+        // scoring: -2 for incorrect
         const player = loadPlayer() || 'Guest';
         recordResult(player, -2);
         lastResult = { correct: false, player };
@@ -450,7 +571,7 @@
     init();
 
     // expose for debug (optional)
-    window._stoich = { newQuestion, checkAnswer, REACTIONS };
+    window._stoich = { newQuestion, checkAnswer, REACTIONS, M_NaCl, MolarVolume: MOLAR_VOLUME };
 
   })();
   </script>
