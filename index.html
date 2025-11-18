@@ -19,7 +19,7 @@
     }
     h1{font-size:1.8rem;margin-bottom:.3rem;}
     .tagline{margin-bottom:1rem;font-size:.95rem;color:#555;}
-    .card{background:var(--card-bg);border-radius:.75rem;padding:1rem 1.2rem;margin-bottom:1rem;box-shadow:0 2px 6px rgba(0,0,0,.08);}
+    .card{background:var(--card-bg);border-radius:.75rem;padding:1rem 1.2rem;margin-bottom:1rem;box-shadow:0 2px 6px rgba(0,0,0,.08);}    
     .label{font-size:.85rem;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:#555;margin-bottom:.3rem;}
     .controls-row{margin-bottom:.5rem;display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;}
     input[type="text"],input[type="number"],select{padding:.3rem .5rem;border-radius:.4rem;border:1px solid #ccc;font-size:1rem;box-sizing:border-box;max-width:100%}
@@ -278,7 +278,7 @@
 
     /* Utilities */
     function escapeHtml(s){
-      return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
     }
 
     function roundToSignificantFigures(num, sig) {
@@ -352,7 +352,7 @@
         tr.innerHTML = '<td colspan="5" class="muted">No entries yet</td>';
         streakLeaderboardBody.appendChild(tr);
       } else {
-        for (const entry of listByStreak.slice(0,50)){ 
+        for (const entry of listByStreak.slice(0,50)){
           const tr = document.createElement('tr');
           tr.innerHTML = `<td>${escapeHtml(entry.name)}</td><td>${entry.maxStreak || 0}</td><td>${entry.score}</td><td>${entry.attempts}</td><td class="muted">${new Date(entry.last).toLocaleString()}</td>`;
           streakLeaderboardBody.appendChild(tr);
@@ -457,7 +457,7 @@
         playerFeedbackEl.className = 'player-feedback error';
         return;
       }
-      if (!savePlayer(s)){ 
+      if (!savePlayer(s)){
         playerFeedbackEl.textContent = 'Could not save player (storage unavailable).';
         playerFeedbackEl.className = 'player-feedback error';
         return;
@@ -506,23 +506,23 @@
           prompt = `How many grams of CO₂ are formed from ${mC} g of C?`;
           currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[1].eq };
         }
-      } else if (typeChoice === 'mass-gas'){ 
+      } else if (typeChoice === 'mass-gas'){
         const mC = Number((Math.random()*(39) + 1).toFixed(2));
         info = REACTIONS[1].computeVolumeCO2FromC(mC);
         prompt = `What volume (L) of CO₂ is formed from ${mC} g of C? (use ${MOLAR_VOLUME} L mol⁻¹)`;
         currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[1].eq };
-      } else if (typeChoice === 'gas-gas'){ 
+      } else if (typeChoice === 'gas-gas'){
         const vH2 = Number((Math.random()*(9) + 1).toFixed(2));
         info = REACTIONS[0].computeO2FromH2Volume(vH2);
         prompt = `What volume (L) of O₂ is required to react with ${vH2} L of H₂ (same conditions)?`;
         currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[0].eq };
-      } else if (typeChoice === 'conc-gpl'){ 
+      } else if (typeChoice === 'conc-gpl'){
         const m = Number((Math.random()*(19) + 1).toFixed(2));
         const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
         info = REACTIONS[2].computeConcentration_g_per_L(m,v);
         prompt = `What is the concentration (g L⁻¹) when ${m} g of NaCl is dissolved in ${v} L?`;
         currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[2].eq };
-      } else if (typeChoice === 'conc-mol'){ 
+      } else if (typeChoice === 'conc-mol'){
         const m = Number((Math.random()*(19) + 1).toFixed(2));
         const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
         info = REACTIONS[2].computeConcentration_mol_per_L(m,v,M_NaCl);
@@ -551,7 +551,7 @@
         return;
       }
       const userVal = Number(raw);
-      if (!isFinite(userVal)){ 
+      if (!isFinite(userVal)){
         answerFeedbackEl.textContent = 'Enter a valid number.';
         answerFeedbackEl.className = 'feedback incorrect';
         return;
