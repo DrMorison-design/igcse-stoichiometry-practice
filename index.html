@@ -44,6 +44,8 @@
     .player-feedback{margin-top:.5rem;font-size:.9rem;color:var(--muted)}
     .player-feedback.success{color:var(--success);font-weight:600}
     .player-feedback.error{color:var(--danger);font-weight:600}
+    .stats-grid{display:grid;grid-template-columns:1fr 1fr;gap:0.8rem}
+    .small-muted{font-size:.8rem;color:var(--muted)}
   </style>
 </head>
 <body>
@@ -67,6 +69,31 @@
     <div class="small" id="currentPlayerLabel">Current player: <strong aria-live="polite">Guest</strong></div>
     <div id="playerHelp" class="note">Leaderboard and stats are saved in this browser only (localStorage).</div>
     <div id="playerFeedback" class="player-feedback" aria-live="polite"></div>
+  </div>
+
+  <!-- Stats + Streak leaderboard -->
+  <div class="card stats-grid" aria-labelledby="statsLabel">
+    <div>
+      <div class="label">Your stats</div>
+      <div class="small-muted">Session and lifetime accuracy by question type</div>
+      <table id="privateStatsTable" aria-live="polite">
+        <thead><tr><th>Type</th><th>Session</th><th>Lifetime</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <div class="small" style="margin-top:.5rem">
+        Current streak: <strong id="currentStreak">0</strong>
+        &nbsp;—&nbsp; Best streak (lifetime): <strong id="bestStreak">0</strong>
+      </div>
+    </div>
+
+    <div>
+      <div class="label">Global streak leaderboard</div>
+      <div class="small-muted">Top players by highest consecutive-correct streak (lifetime)</div>
+      <table id="streakLeaderboardTable" aria-live="polite">
+        <thead><tr><th>Player</th><th>Max streak</th><th>Score</th><th>Attempts</th><th>Last</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Question card -->
@@ -106,12 +133,12 @@
     </div>
   </div>
 
-  <!-- Leaderboard -->
+  <!-- Classic leaderboard (score) -->
   <div class="card">
     <div class="label">Leaderboard</div>
-    <div class="small">Top players (this browser)</div>
+    <div class="small-muted">Top players (this browser) — score and max streak</div>
     <table id="leaderboardTable" aria-live="polite">
-      <thead><tr><th>Player</th><th>Score</th><th>Attempts</th><th>Last</th></tr></thead>
+      <thead><tr><th>Player</th><th>Score</th><th>Attempts</th><th>Last</th><th>Max streak</th></tr></thead>
       <tbody></tbody>
     </table>
     <div style="margin-top:.6rem;display:flex;gap:.5rem">
@@ -128,35 +155,35 @@
   (function(){
     /* Storage keys */
     const PLAYER_KEY = 'stoich.player';
-    const LEADERBOARD_KEY = 'stoich.leaderboard';
+    const LEADERBOARD_KEY = 'stoich.leaderboard'; // array of entries including maxStreak
+    const LIFETIME_STATS_KEY = 'stoich.lifetimeStats'; // object keyed by player name
 
     /* Constants */
-    const MOLAR_VOLUME = 24.0; // L mol⁻¹ (approx at 25°C) — used for gas volume questions
+    const MOLAR_VOLUME = 24.0; // L mol⁻¹
     const M_NaCl = 58.44;
+    const QUESTION_TYPES = ['mass-mass','mass-gas','gas-gas','conc-gpl','conc-mol'];
 
-    /* Reaction definitions and compute functions */
+    /* Reaction definitions (unchanged from previous) */
     const REACTIONS = [
       {
         id: 'water-formation',
         eq: '2 H₂ + O₂ → 2 H₂O',
-        desc: 'How many grams of H₂O are formed from X g of H₂?',
         computeMassFromH2: (mH2) => {
           const M_H2 = 2.016;
           const M_H2O = 18.015;
           const nH2 = mH2 / M_H2;
-          const nH2O = nH2; // 2 H2 -> 2 H2O (1:1)
+          const nH2O = nH2;
           const mH2O = nH2O * M_H2O;
           const steps = [
-            `Balanced equation: ${this ? this.eq : '2 H₂ + O₂ → 2 H₂O'}`,
+            `Balanced equation: 2 H₂ + O₂ → 2 H₂O`,
             `moles H₂ = ${mH2.toFixed(3)} / ${M_H2} = ${nH2.toFixed(4)} mol`,
             `moles H₂O = moles H₂ (1:1) = ${nH2O.toFixed(4)} mol`,
             `mass H₂O = ${nH2O.toFixed(4)} × ${M_H2O} = ${mH2O.toFixed(4)} g`
           ];
           return { value: mH2O, unit: 'g', steps };
         },
-        // gas-gas ratio example: what volume of O2 reacts with X L H2? (2 H2 : 1 O2)
         computeO2FromH2Volume: (vH2) => {
-          const vO2 = vH2 / 2; // volumes proportional to moles for gases under same conditions
+          const vO2 = vH2 / 2;
           const steps = [
             `Balanced equation: 2 H₂ + O₂ → 2 H₂O`,
             `Volume ratio H₂ : O₂ = 2 : 1`,
@@ -168,7 +195,6 @@
       {
         id: 'co2-formation',
         eq: 'C + O₂ → CO₂',
-        desc: 'How many grams (or litres) of CO₂ are formed from X g of C?',
         computeMassFromC: (mC) => {
           const M_C = 12.01;
           const M_CO2 = 44.01;
@@ -176,7 +202,7 @@
           const nCO2 = nC;
           const mCO2 = nCO2 * M_CO2;
           const steps = [
-            `Balanced equation: ${this ? this.eq : 'C + O₂ → CO₂'}`,
+            `Balanced equation: C + O₂ → CO₂`,
             `moles C = ${mC.toFixed(3)} / ${M_C} = ${nC.toFixed(4)} mol`,
             `moles CO₂ = moles C (1:1) = ${nCO2.toFixed(4)} mol`,
             `mass CO₂ = ${nCO2.toFixed(4)} × ${M_CO2} = ${mCO2.toFixed(4)} g`
@@ -200,7 +226,6 @@
       {
         id: 'concentration',
         eq: '— (dissolving)',
-        desc: 'Concentration questions (g L⁻¹ or mol L⁻¹)',
         computeConcentration_g_per_L: (mass_g, volume_L) => {
           const conc = mass_g / volume_L;
           const steps = [
@@ -238,14 +263,21 @@
     const solutionStepsEl = document.getElementById('solutionSteps');
 
     const leaderboardBody = document.querySelector('#leaderboardTable tbody');
+    const streakLeaderboardBody = document.querySelector('#streakLeaderboardTable tbody');
+    const privateStatsTableBody = document.querySelector('#privateStatsTable tbody');
+    const currentStreakEl = document.getElementById('currentStreak');
+    const bestStreakEl = document.getElementById('bestStreak');
     const clearLeaderboardBtn = document.getElementById('clearLeaderboardBtn');
 
     /* State */
-    let currentQuestion = null; // {type, params, correctValue, unit, steps, eq?}
+    let currentQuestion = null;
     let lastResult = null;
 
+    // Session stats (in-memory). Per-player session data keyed by player name.
+    const sessionStats = {};
+
     /* Utilities */
-    function escapeHtml(s){ return String(s).replace(/[&<>\\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c])); }
+    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
     function roundToSignificantFigures(num, sig) {
       if (!isFinite(num) || num === 0) return 0;
@@ -255,7 +287,6 @@
 
     function toSignificantString(num, sig) {
       if (!isFinite(num)) return String(num);
-      // toPrecision returns in either exponential or fixed as needed
       return Number(num).toPrecision(sig).replace(/(?:\.0+|([\.]\d+?)0+)$/, '$1');
     }
 
@@ -264,11 +295,6 @@
       return Math.abs(a-b)/Math.abs(b);
     }
 
-    /* Acceptance criteria:
-       - Accept if user's value is within relative error threshold (2%)
-       OR
-       - Accept if user's value rounded to 2 or 3 s.f. equals correct value rounded to the same s.f.
-    */
     function isAcceptable(userValue, correctValue){
       if (!isFinite(userValue) || !isFinite(correctValue)) return false;
       const relErr = relativeError(userValue, correctValue);
@@ -284,296 +310,137 @@
       return {ok:false, reason:'outside tolerance', relErr};
     }
 
-    /* Leaderboard storage */
+    /* Persistent storage helpers */
     function loadLeaderboard(){
       try { const raw = localStorage.getItem(LEADERBOARD_KEY); return raw ? JSON.parse(raw) : []; } catch(e){ return []; }
     }
     function saveLeaderboard(list){
       try { localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(list)); return true; } catch(e){ return false; }
     }
+    function loadLifetimeStats(){
+      try { const raw = localStorage.getItem(LIFETIME_STATS_KEY); return raw ? JSON.parse(raw) : {}; } catch(e){ return {}; }
+    }
+    function saveLifetimeStats(obj){
+      try { localStorage.setItem(LIFETIME_STATS_KEY, JSON.stringify(obj)); return true; } catch(e){ return false; }
+    }
 
+    /* Leaderboard rendering (score and streak) */
     function renderLeaderboard(){
       const list = loadLeaderboard();
-      list.sort((a,b) => (b.score - a.score) || (a.attempts - b.attempts) || (new Date(b.last) - new Date(a.last)));
+      // For the main leaderboard sort by score desc
+      const listByScore = [...list].sort((a,b) => (b.score - a.score) || (a.attempts - b.attempts) || (new Date(b.last) - new Date(a.last)));
       leaderboardBody.innerHTML = '';
-      if (list.length === 0){
+      if (listByScore.length === 0){
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="4" class="muted">No entries yet</td>';
+        tr.innerHTML = '<td colspan="5" class="muted">No entries yet</td>';
         leaderboardBody.appendChild(tr);
-        return;
+      } else {
+        for (const entry of listByScore.slice(0,50)){ 
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escapeHtml(entry.name)}</td><td>${entry.score}</td><td>${entry.attempts}</td><td class="muted">${new Date(entry.last).toLocaleString()}</td><td>${entry.maxStreak || 0}</td>`;
+          leaderboardBody.appendChild(tr);
+        }
       }
-      for (const entry of list.slice(0,50)){
+
+      // Streak leaderboard (by maxStreak desc)
+      const listByStreak = [...list].sort((a,b) => (b.maxStreak - a.maxStreak) || (b.score - a.score));
+      streakLeaderboardBody.innerHTML = '';
+      if (listByStreak.length === 0){
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${escapeHtml(entry.name)}</td><td>${entry.score}</td><td>${entry.attempts}</td><td class="muted">${new Date(entry.last).toLocaleString()}</td>`;
-        leaderboardBody.appendChild(tr);
+        tr.innerHTML = '<td colspan="5" class="muted">No entries yet</td>';
+        streakLeaderboardBody.appendChild(tr);
+      } else {
+        for (const entry of listByStreak.slice(0,50)){ 
+          const tr = document.createElement('tr');
+          tr.innerHTML = `<td>${escapeHtml(entry.name)}</td><td>${entry.maxStreak || 0}</td><td>${entry.score}</td><td>${entry.attempts}</td><td class="muted">${new Date(entry.last).toLocaleString()}</td>`;
+          streakLeaderboardBody.appendChild(tr);
+        }
       }
     }
 
-    function recordResult(playerName, deltaScore){
+    /* Lifetime stats rendering for current player */
+    function renderPrivateStatsFor(player){
+      const lifetime = loadLifetimeStats();
+      const pstats = lifetime[player] || { attemptsByType: {}, correctByType: {}, bestStreak: 0 };
+      const sess = sessionStats[player] || { attemptsByType: {}, correctByType: {}, currentStreak: 0, bestStreak: 0 };
+
+      // ensure all types present
+      privateStatsTableBody.innerHTML = '';
+      for (const t of QUESTION_TYPES){
+        const sAttempts = sess.attemptsByType[t] || 0;
+        const sCorrect = sess.correctByType[t] || 0;
+        const lAttempts = pstats.attemptsByType[t] || 0;
+        const lCorrect = pstats.correctByType[t] || 0;
+        const sPct = sAttempts ? Math.round((sCorrect / sAttempts) * 100) + '%' : '-';
+        const lPct = lAttempts ? Math.round((lCorrect / lAttempts) * 100) + '%' : '-';
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${t}</td><td>${sCorrect}/${sAttempts} (${sPct})</td><td>${lCorrect}/${lAttempts} (${lPct})</td>`;
+        privateStatsTableBody.appendChild(tr);
+      }
+
+      currentStreakEl.textContent = sess.currentStreak || 0;
+      bestStreakEl.textContent = pstats.bestStreak || sess.bestStreak || 0;
+    }
+
+    /* Record result: updates leaderboard score/attempts and streaks and lifetime stats */
+    function recordResult(playerName, deltaScore, questionType, wasCorrect){
       if (!playerName) return;
+
+      // Update leaderboard entry (score, attempts, last, maxStreak)
       const list = loadLeaderboard();
       const now = new Date().toISOString();
       let entry = list.find(e => e.name === playerName);
       if (!entry){
-        entry = { name: playerName, score: 0, attempts: 0, last: now };
+        entry = { name: playerName, score: 0, attempts: 0, last: now, maxStreak: 0 }; 
         list.push(entry);
       }
       entry.score += deltaScore;
       entry.attempts += 1;
       entry.last = now;
+
+      // Manage session streaks
+      if (!sessionStats[playerName]) {
+        sessionStats[playerName] = { attemptsByType: {}, correctByType: {}, currentStreak: 0, bestStreak: 0 };
+      }
+      const sess = sessionStats[playerName];
+
+      // Update session counts
+      sess.attemptsByType[questionType] = (sess.attemptsByType[questionType] || 0) + 1;
+      if (wasCorrect) sess.correctByType[questionType] = (sess.correctByType[questionType] || 0) + 1;
+
+      // Update current streak and session best
+      if (wasCorrect){
+        sess.currentStreak = (sess.currentStreak || 0) + 1;
+        if (sess.currentStreak > sess.bestStreak) sess.bestStreak = sess.currentStreak;
+      } else {
+        sess.currentStreak = 0;
+      }
+
+      // Update lifetime stats
+      const lifetime = loadLifetimeStats();
+      if (!lifetime[playerName]) {
+        lifetime[playerName] = { attemptsByType: {}, correctByType: {}, bestStreak: 0 };
+      }
+      const lp = lifetime[playerName];
+      lp.attemptsByType[questionType] = (lp.attemptsByType[questionType] || 0) + 1;
+      if (wasCorrect) lp.correctByType[questionType] = (lp.correctByType[questionType] || 0) + 1;
+
+      // Update lifetime best streak and leaderboard maxStreak
+      lp.bestStreak = Math.max(lp.bestStreak || 0, sess.currentStreak || 0);
+      entry.maxStreak = Math.max(entry.maxStreak || 0, lp.bestStreak);
+
+      // persist
+      saveLifetimeStats(lifetime);
       saveLeaderboard(list);
+
+      // update displayed stats & leaderboards
+      renderPrivateStatsFor(playerName);
       renderLeaderboard();
     }
 
     /* Player handling */
-    function sanitizeName(n){ return n ? String(n).trim().replace(/\s+/g,' ') : ''; }
-
-    function loadPlayer(){
-      try { return localStorage.getItem(PLAYER_KEY); } catch(e){ return null; }
-    }
-    function savePlayer(name){
-      try { localStorage.setItem(PLAYER_KEY, name); return true; } catch(e){ return false; }
-    }
-
-    function setPlayer(name){
-      const s = sanitizeName(name);
-      if (!s){
-        playerFeedbackEl.textContent = 'Please enter a name.';
-        playerFeedbackEl.className = 'player-feedback error';
-        return;
-      }
-      if (!savePlayer(s)){
-        playerFeedbackEl.textContent = 'Could not save player (storage unavailable).';
-        playerFeedbackEl.className = 'player-feedback error';
-        return;
-      }
-      currentPlayerEl.textContent = s;
-      playerFeedbackEl.textContent = 'Player set: ' + s;
-      playerFeedbackEl.className = 'player-feedback success';
-      renderLeaderboard();
-    }
-
-    function resetPlayer(){
-      try { localStorage.removeItem(PLAYER_KEY); } catch(e){}
-      currentPlayerEl.textContent = 'Guest';
-      playerInput.value = '';
-      playerFeedbackEl.textContent = 'Player reset to Guest.';
-      playerFeedbackEl.className = 'player-feedback';
-    }
-
-    /* Question generation helpers */
-    function randRange(min,max,step=1){
-      const choices = Math.floor((max - min)/step) + 1;
-      return min + Math.floor(Math.random()*choices)*step;
-    }
-
-    function pickReactionForType(type){
-      // choose a reaction that supports the requested question type
-      const pool = [];
-      if (type === 'mass-mass'){
-        pool.push(REACTIONS.find(r=> r.id === 'water-formation'));
-        pool.push(REACTIONS.find(r=> r.id === 'co2-formation'));
-      } else if (type === 'mass-gas'){
-        pool.push(REACTIONS.find(r=> r.id === 'co2-formation'));
-      } else if (type === 'gas-gas'){
-        pool.push(REACTIONS.find(r=> r.id === 'water-formation'));
-      }
-      // fallback to any
-      return pool.filter(Boolean);
-    }
-
-    /* New question generator */
-    function newQuestion(){
-      // Determine requested type from select
-      const selected = questionTypeSelect.value || 'random';
-      answerFeedbackEl.textContent = '';
-      solutionStepsEl.style.display = 'none';
-      solutionStepsEl.innerHTML = '';
-      answerInput.value = '';
-      questionMetaEl.textContent = '';
-
-      // For random, pick uniformly among implemented types
-      const typeChoice = (selected === 'random') ? ['mass-mass','mass-gas','gas-gas','conc-gpl','conc-mol'][Math.floor(Math.random()*5)] : selected;
-
-      if (typeChoice === 'mass-mass'){
-        // randomly choose between water and CO2 mass→mass
-        const reactions = pickReactionForType('mass-mass');
-        const reaction = reactions[Math.floor(Math.random()*reactions.length)];
-        if (reaction.id === 'water-formation'){
-          const mH2 = Number((Math.random()*(48) + 2).toFixed(2));
-          const info = REACTIONS[0].computeMassFromH2(mH2);
-          currentQuestion = {
-            type: 'mass-mass',
-            prompt: `How many grams of H₂O are formed from ${mH2} g of H₂?`,
-            correct: info.value,
-            unit: info.unit,
-            steps: info.steps,
-            eq: REACTIONS[0].eq
-          };
-        } else { // co2
-          const mC = Number((Math.random()*(39) + 1).toFixed(2));
-          const info = REACTIONS[1].computeMassFromC(mC);
-          currentQuestion = {
-            type: 'mass-mass',
-            prompt: `How many grams of CO₂ are formed from ${mC} g of C?`,
-            correct: info.value,
-            unit: info.unit,
-            steps: info.steps,
-            eq: REACTIONS[1].eq
-          };
-        }
-      } else if (typeChoice === 'mass-gas'){
-        // CO2 volume from mass of carbon
-        const mC = Number((Math.random()*(39) + 1).toFixed(2));
-        const info = REACTIONS[1].computeVolumeCO2FromC(mC);
-        currentQuestion = {
-          type: 'mass-gas',
-          prompt: `What volume (L) of CO₂ is formed from ${mC} g of C? (use ${MOLAR_VOLUME} L mol⁻¹)`,
-          correct: info.value,
-          unit: info.unit,
-          steps: info.steps,
-          eq: REACTIONS[1].eq
-        };
-      } else if (typeChoice === 'gas-gas'){
-        // volume of O2 needed for X L H2
-        const vH2 = Number((Math.random()*(9) + 1).toFixed(2)); // 1–10 L
-        const info = REACTIONS[0].computeO2FromH2Volume(vH2);
-        currentQuestion = {
-          type: 'gas-gas',
-          prompt: `What volume (L) of O₂ is required to react with ${vH2} L of H₂ (same conditions)?`,
-          correct: info.value,
-          unit: info.unit,
-          steps: info.steps,
-          eq: REACTIONS[0].eq
-        };
-      } else if (typeChoice === 'conc-gpl'){
-        const m = Number((Math.random()*(19) + 1).toFixed(2));
-        const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
-        const info = REACTIONS[2].computeConcentration_g_per_L(m,v);
-        currentQuestion = {
-          type: 'conc-gpl',
-          prompt: `What is the concentration (g L⁻¹) when ${m} g of NaCl is dissolved in ${v} L?`,
-          correct: info.value,
-          unit: info.unit,
-          steps: info.steps,
-          eq: REACTIONS[2].eq
-        };
-      } else if (typeChoice === 'conc-mol'){
-        const m = Number((Math.random()*(19) + 1).toFixed(2));
-        const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
-        const info = REACTIONS[2].computeConcentration_mol_per_L(m,v,M_NaCl);
-        currentQuestion = {
-          type: 'conc-mol',
-          prompt: `What is the concentration (mol L⁻¹) when ${m} g of NaCl (M = ${M_NaCl}) is dissolved in ${v} L?`,
-          correct: info.value,
-          unit: info.unit,
-          steps: info.steps,
-          eq: REACTIONS[2].eq
-        };
-      } else {
-        // fallback to random mass-mass
-        return newQuestion();
-      }
-
-      questionTextEl.textContent = currentQuestion.prompt;
-      if (currentQuestion.eq){
-        questionMetaEl.textContent = 'Balanced equation: ' + currentQuestion.eq;
-      } else {
-        questionMetaEl.textContent = '';
-      }
-      answerUnitEl.textContent = currentQuestion.unit ? currentQuestion.unit : '';
-      solutionStepsEl.style.display = 'none';
-      lastResult = null;
-    }
-
-    /* Answer checking */
-    function checkAnswer(){
-      if (!currentQuestion){
-        answerFeedbackEl.textContent = 'No question: click New question.';
-        answerFeedbackEl.className = 'feedback';
-        return;
-      }
-      const raw = answerInput.value;
-      if (raw === '' || raw === null){
-        answerFeedbackEl.textContent = 'Enter a numeric answer.';
-        answerFeedbackEl.className = 'feedback incorrect';
-        return;
-      }
-      const userVal = Number(raw);
-      if (!isFinite(userVal)){
-        answerFeedbackEl.textContent = 'Enter a valid number.';
-        answerFeedbackEl.className = 'feedback incorrect';
-        return;
-      }
-
-      const correctVal = currentQuestion.correct;
-      const result = isAcceptable(userVal, correctVal);
-
-      // Build feedback message
-      const correct2 = toSignificantString(correctVal, 2);
-      const correct3 = toSignificantString(correctVal, 3);
-      const user2 = toSignificantString(userVal, 2);
-      const user3 = toSignificantString(userVal, 3);
-
-      if (result.ok){
-        answerFeedbackEl.textContent = `Correct — ${result.reason}. (Correct: ${correct3} or ${correct2} ${currentQuestion.unit})`;
-        answerFeedbackEl.className = 'feedback correct';
-        solutionStepsEl.innerHTML = currentQuestion.steps.map(s => `<p>${escapeHtml(s)}</p>`).join('');
-        solutionStepsEl.style.display = 'block';
-
-        // scoring: +10 for correct
-        const player = loadPlayer() || 'Guest';
-        recordResult(player, 10);
-        lastResult = { correct: true, player };
-      } else {
-        answerFeedbackEl.textContent = `Not correct. Your answer (3 s.f.) ${user3} vs correct (3 s.f.) ${correct3}.`;
-        answerFeedbackEl.className = 'feedback incorrect';
-        solutionStepsEl.innerHTML = currentQuestion.steps.map(s => `<p>${escapeHtml(s)}</p>`).join('');
-        solutionStepsEl.style.display = 'block';
-
-        // scoring: -2 for incorrect
-        const player = loadPlayer() || 'Guest';
-        recordResult(player, -2);
-        lastResult = { correct: false, player };
-      }
-    }
-
-    /* Initialization */
-    function init(){
-      // attach handlers
-      setPlayerBtn.addEventListener('click', ()=> setPlayer(playerInput.value));
-      resetPlayerBtn.addEventListener('click', resetPlayer);
-      newQuestionBtn.addEventListener('click', newQuestion);
-      checkAnswerBtn.addEventListener('click', checkAnswer);
-
-      playerInput.addEventListener('keydown', (e)=> { if (e.key === 'Enter') setPlayer(playerInput.value); });
-      answerInput.addEventListener('keydown', (e)=> { if (e.key === 'Enter') checkAnswer(); });
-
-      clearLeaderboardBtn.addEventListener('click', ()=>{
-        if (confirm('Clear leaderboard in this browser?')){ saveLeaderboard([]); renderLeaderboard(); }
-      });
-
-      // load player
-      const saved = loadPlayer();
-      if (saved){
-        const s = sanitizeName(saved);
-        currentPlayerEl.textContent = s;
-        playerInput.value = s;
-        playerFeedbackEl.textContent = 'Loaded saved player: ' + s;
-        playerFeedbackEl.className = 'player-feedback success';
-      } else {
-        currentPlayerEl.textContent = 'Guest';
-      }
-
-      renderLeaderboard();
-    }
-
-    init();
-
-    // expose for debug (optional)
-    window._stoich = { newQuestion, checkAnswer, REACTIONS, M_NaCl, MolarVolume: MOLAR_VOLUME };
-
-  })();
+    function sanitizeName(n){ return n ? String(n).trim().replace(/<[^>]*>/g, ''); }
+    })();
   </script>
 </body>
 </html>
