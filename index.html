@@ -35,7 +35,7 @@
     .solution-steps{margin-top:.5rem;font-size:.9rem;line-height:1.4}
     .solution-steps p{margin:.2rem 0}
     .note{font-size:.8rem;color:var(--muted);margin-top:.3rem}
-    .small{font-size:.85rem;color:#555}
+    .small{font-size:.85rem;color:var(--555)}
     table{width:100%;border-collapse:collapse;font-size:.85rem;margin-top:.4rem}
     th,td{border-bottom:1px solid #eee;padding:.25rem .3rem;text-align:left}
     th{font-weight:600;background:#f7f7f7}
@@ -277,7 +277,7 @@
     const sessionStats = {};
 
     /* Utilities */
-    function escapeHtml(s){ return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+    function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 
     function roundToSignificantFigures(num, sig) {
       if (!isFinite(num) || num === 0) return 0;
@@ -327,120 +327,8 @@
     /* Leaderboard rendering (score and streak) */
     function renderLeaderboard(){
       const list = loadLeaderboard();
-      // For the main leaderboard sort by score desc
       const listByScore = [...list].sort((a,b) => (b.score - a.score) || (a.attempts - b.attempts) || (new Date(b.last) - new Date(a.last)));
       leaderboardBody.innerHTML = '';
       if (listByScore.length === 0){
         const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="5" class="muted">No entries yet</td>';
-        leaderboardBody.appendChild(tr);
-      } else {
-        for (const entry of listByScore.slice(0,50)){ 
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escapeHtml(entry.name)}</td><td>${entry.score}</td><td>${entry.attempts}</td><td class="muted">${new Date(entry.last).toLocaleString()}</td><td>${entry.maxStreak || 0}</td>`;
-          leaderboardBody.appendChild(tr);
-        }
-      }
-
-      // Streak leaderboard (by maxStreak desc)
-      const listByStreak = [...list].sort((a,b) => (b.maxStreak - a.maxStreak) || (b.score - a.score));
-      streakLeaderboardBody.innerHTML = '';
-      if (listByStreak.length === 0){
-        const tr = document.createElement('tr');
-        tr.innerHTML = '<td colspan="5" class="muted">No entries yet</td>';
-        streakLeaderboardBody.appendChild(tr);
-      } else {
-        for (const entry of listByStreak.slice(0,50)){ 
-          const tr = document.createElement('tr');
-          tr.innerHTML = `<td>${escapeHtml(entry.name)}</td><td>${entry.maxStreak || 0}</td><td>${entry.score}</td><td>${entry.attempts}</td><td class="muted">${new Date(entry.last).toLocaleString()}</td>`;
-          streakLeaderboardBody.appendChild(tr);
-        }
-      }
-    }
-
-    /* Lifetime stats rendering for current player */
-    function renderPrivateStatsFor(player){
-      const lifetime = loadLifetimeStats();
-      const pstats = lifetime[player] || { attemptsByType: {}, correctByType: {}, bestStreak: 0 };
-      const sess = sessionStats[player] || { attemptsByType: {}, correctByType: {}, currentStreak: 0, bestStreak: 0 };
-
-      // ensure all types present
-      privateStatsTableBody.innerHTML = '';
-      for (const t of QUESTION_TYPES){
-        const sAttempts = sess.attemptsByType[t] || 0;
-        const sCorrect = sess.correctByType[t] || 0;
-        const lAttempts = pstats.attemptsByType[t] || 0;
-        const lCorrect = pstats.correctByType[t] || 0;
-        const sPct = sAttempts ? Math.round((sCorrect / sAttempts) * 100) + '%' : '-';
-        const lPct = lAttempts ? Math.round((lCorrect / lAttempts) * 100) + '%' : '-';
-        const tr = document.createElement('tr');
-        tr.innerHTML = `<td>${t}</td><td>${sCorrect}/${sAttempts} (${sPct})</td><td>${lCorrect}/${lAttempts} (${lPct})</td>`;
-        privateStatsTableBody.appendChild(tr);
-      }
-
-      currentStreakEl.textContent = sess.currentStreak || 0;
-      bestStreakEl.textContent = pstats.bestStreak || sess.bestStreak || 0;
-    }
-
-    /* Record result: updates leaderboard score/attempts and streaks and lifetime stats */
-    function recordResult(playerName, deltaScore, questionType, wasCorrect){
-      if (!playerName) return;
-
-      // Update leaderboard entry (score, attempts, last, maxStreak)
-      const list = loadLeaderboard();
-      const now = new Date().toISOString();
-      let entry = list.find(e => e.name === playerName);
-      if (!entry){
-        entry = { name: playerName, score: 0, attempts: 0, last: now, maxStreak: 0 }; 
-        list.push(entry);
-      }
-      entry.score += deltaScore;
-      entry.attempts += 1;
-      entry.last = now;
-
-      // Manage session streaks
-      if (!sessionStats[playerName]) {
-        sessionStats[playerName] = { attemptsByType: {}, correctByType: {}, currentStreak: 0, bestStreak: 0 };
-      }
-      const sess = sessionStats[playerName];
-
-      // Update session counts
-      sess.attemptsByType[questionType] = (sess.attemptsByType[questionType] || 0) + 1;
-      if (wasCorrect) sess.correctByType[questionType] = (sess.correctByType[questionType] || 0) + 1;
-
-      // Update current streak and session best
-      if (wasCorrect){
-        sess.currentStreak = (sess.currentStreak || 0) + 1;
-        if (sess.currentStreak > sess.bestStreak) sess.bestStreak = sess.currentStreak;
-      } else {
-        sess.currentStreak = 0;
-      }
-
-      // Update lifetime stats
-      const lifetime = loadLifetimeStats();
-      if (!lifetime[playerName]) {
-        lifetime[playerName] = { attemptsByType: {}, correctByType: {}, bestStreak: 0 };
-      }
-      const lp = lifetime[playerName];
-      lp.attemptsByType[questionType] = (lp.attemptsByType[questionType] || 0) + 1;
-      if (wasCorrect) lp.correctByType[questionType] = (lp.correctByType[questionType] || 0) + 1;
-
-      // Update lifetime best streak and leaderboard maxStreak
-      lp.bestStreak = Math.max(lp.bestStreak || 0, sess.currentStreak || 0);
-      entry.maxStreak = Math.max(entry.maxStreak || 0, lp.bestStreak);
-
-      // persist
-      saveLifetimeStats(lifetime);
-      saveLeaderboard(list);
-
-      // update displayed stats & leaderboards
-      renderPrivateStatsFor(playerName);
-      renderLeaderboard();
-    }
-
-    /* Player handling */
-    function sanitizeName(n){ return n ? String(n).trim().replace(/<[^>]*>/g, ''); }
-    })();
-  </script>
-</body>
-</html>
+        tr.innerHTML = '<td colspan="5" class="muted">No entries yet</td>
