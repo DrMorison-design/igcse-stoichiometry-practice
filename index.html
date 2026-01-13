@@ -159,30 +159,106 @@
     const LIFETIME_STATS_KEY = 'stoich.lifetimeStats';
 
     /* Constants */
-    const MOLAR_VOLUME = 24.0; // L mol⁻¹
+    const MOLAR_VOLUME = 24.0; // L mol⁻¹ (IGCSE approx)
     const M_NaCl = 58.44;
     const QUESTION_TYPES = ['mass-mass','mass-gas','gas-gas','conc-gpl','conc-mol'];
 
-    /* Reaction definitions */
+    /* Helper: molar masses (approx) */
+    function mm(formula){
+      const lookup = {
+        'H2': 2.016,
+        'H2O': 18.015,
+        'C': 12.01,
+        'CO2': 44.01,
+        'NaCl': 58.44,
+        'S': 32.06,
+        'SO2': 64.06,
+        'CaCO3': 100.09,
+        'CaCl2': 110.98,
+        'BaCl2': 208.23,
+        'BaSO4': 233.39,
+        'Na2SO4': 142.04,
+        'Cu': 63.55,
+        'Ag': 107.87,
+        'Cu(NO3)2': 187.56,
+        'Mg(OH)2': 58.32,
+        'MgCl2': 95.21,
+        'Na': 22.99,
+        'Cl2': 70.90,
+        'NaCl_s': 58.44,
+        'K': 39.10,
+        'KOH': 56.11,
+        'H2': 2.016,
+        'Mg': 24.305,
+        'Mg3N2': 100.93,
+        'N2': 28.02,
+        'Fe': 55.85,
+        'FeCl3': 162.20,
+        'Ba(OH)2': 171.34,
+        'H3PO4': 97.99,
+        'Ba3(PO4)2': 601.93,
+        'Al': 26.98,
+        'H2SO4': 98.079,
+        'Al2(SO4)3': 342.15,
+        'C8H18': 114.23, // octane
+        'O2': 32.00,
+        'P4O10': 283.89,
+        'P4': 123.88,
+        'NH3': 17.03,
+        'NO': 30.01,
+        'Ca3(PO4)2': 310.18,
+        'CaSO4': 136.14,
+        'Fe2O3': 159.69,
+        'FeO': 71.844,
+        'K2MnO4': 197.0,
+        'KMnO4': 158.04,
+        'MnO2': 86.94,
+        'Cu(NO3)2_s': 187.56,
+        'CuO': 79.55,
+        'NO2': 46.01,
+        'I2': 253.81,
+        'Mg(OH)2_s': 58.32,
+        'NH3_g': 17.03,
+        'Pb(NO3)2': 331.2,
+        'PbO': 223.2,
+        'MnO2': 86.94,
+        'Fe3O4': 231.54,
+        'C2H5OH': 46.07,
+        'Ca(OH)2': 74.09,
+        'CaCO3_s': 100.09
+      };
+      return lookup[formula] || 0;
+    }
+
+    /* Reaction definitions (expanded) 
+       Each reaction exposes small helper methods for common question types:
+       - computeMassFromReactant(mass_g) => { value, unit, steps }
+       - computeVolumeFromReactant(mass_g) => { value, unit, steps }  (when reaction yields a gas)
+       - computeVolumeFromVolume(volume_L) => { value, unit, steps } (volume ratios)
+    */
     const REACTIONS = [
       {
         id: 'water-formation',
         eq: '2 H₂ + O₂ → 2 H₂O',
+        primaryReactant: 'H2',
+        primaryProduct: 'H2O',
         computeMassFromH2: (mH2) => {
-          const M_H2 = 2.016;
-          const M_H2O = 18.015;
+          const M_H2 = mm('H2');
+          const M_H2O = mm('H2O');
           const nH2 = mH2 / M_H2;
-          const nH2O = nH2;
+          const nH2O = nH2; // 1:1 per molecule (but 2:2)
           const mH2O = nH2O * M_H2O;
           const steps = [
             `Balanced equation: 2 H₂ + O₂ → 2 H₂O`,
             `moles H₂ = ${mH2.toFixed(3)} / ${M_H2} = ${nH2.toFixed(4)} mol`,
-            `moles H₂O = moles H₂ (1:1) = ${nH2O.toFixed(4)} mol`,
+            `moles H₂O = moles H₂ (1:1 by molecule) = ${nH2O.toFixed(4)} mol`,
             `mass H₂O = ${nH2O.toFixed(4)} × ${M_H2O} = ${mH2O.toFixed(4)} g`
           ];
           return { value: mH2O, unit: 'g', steps };
         },
-        computeO2FromH2Volume: (vH2) => {
+        computeMassFromReactant(m){ return this.computeMassFromH2(m); },
+        computeVolumeFromVolume: (vH2) => {
+          // For gas-gas volume ratio questions (H2 to O2)
           const vO2 = vH2 / 2;
           const steps = [
             `Balanced equation: 2 H₂ + O₂ → 2 H₂O`,
@@ -195,9 +271,11 @@
       {
         id: 'co2-formation',
         eq: 'C + O₂ → CO₂',
+        primaryReactant: 'C',
+        primaryProduct: 'CO2',
         computeMassFromC: (mC) => {
-          const M_C = 12.01;
-          const M_CO2 = 44.01;
+          const M_C = mm('C');
+          const M_CO2 = mm('CO2');
           const nC = mC / M_C;
           const nCO2 = nC;
           const mCO2 = nCO2 * M_CO2;
@@ -209,8 +287,9 @@
           ];
           return { value: mCO2, unit: 'g', steps };
         },
-        computeVolumeCO2FromC: (mC) => {
-          const M_C = 12.01;
+        computeMassFromReactant(m){ return this.computeMassFromC(m); },
+        computeVolumeFromC: (mC) => {
+          const M_C = mm('C');
           const nC = mC / M_C;
           const nCO2 = nC;
           const vol = nCO2 * MOLAR_VOLUME;
@@ -221,11 +300,14 @@
             `volume CO₂ = ${nCO2.toFixed(4)} × ${MOLAR_VOLUME} = ${vol.toFixed(4)} L`
           ];
           return { value: vol, unit: 'L', steps };
-        }
+        },
+        computeVolumeFromReactant(m){ return this.computeVolumeFromC(m); }
       },
       {
         id: 'concentration',
         eq: '— (dissolving)',
+        primaryReactant: 'NaCl',
+        primaryProduct: 'solution',
         computeConcentration_g_per_L: (mass_g, volume_L) => {
           const conc = mass_g / volume_L;
           const steps = [
@@ -241,6 +323,524 @@
             `concentration = ${moles.toFixed(4)} mol / ${volume_L.toFixed(3)} L = ${conc.toFixed(4)} mol L⁻¹`
           ];
           return { value: conc, unit: 'mol L⁻¹', steps };
+        }
+      },
+
+      /* Additional reactions added below */
+      {
+        id: 's-combustion',
+        eq: 'S(s) + O₂(g) → SO₂(g)',
+        primaryReactant: 'S',
+        primaryProduct: 'SO2',
+        computeMassFromReactant: (mS) => {
+          const M_S = mm('S');
+          const M_SO2 = mm('SO2');
+          const nS = mS / M_S;
+          const nSO2 = nS;
+          const mSO2 = nSO2 * M_SO2;
+          const steps = [
+            `Balanced equation: S + O₂ → SO₂`,
+            `moles S = ${mS.toFixed(3)} / ${M_S} = ${nS.toFixed(4)} mol`,
+            `moles SO₂ = moles S (1:1) = ${nSO2.toFixed(4)} mol`,
+            `mass SO₂ = ${nSO2.toFixed(4)} × ${M_SO2} = ${mSO2.toFixed(4)} g`
+          ];
+          return { value: mSO2, unit: 'g', steps };
+        },
+        computeVolumeFromReactant: (mS) => {
+          const M_S = mm('S');
+          const nS = mS / M_S;
+          const nSO2 = nS;
+          const v = nSO2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: S + O₂ → SO₂`,
+            `moles S = ${mS.toFixed(3)} / ${M_S} = ${nS.toFixed(4)} mol`,
+            `moles SO₂ = moles S (1:1) = ${nSO2.toFixed(4)} mol`,
+            `volume SO₂ = ${nSO2.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'caco3-acid',
+        eq: 'CaCO₃(s) + 2 HCl(aq) → CaCl₂(aq) + H₂O(l) + CO₂(g)',
+        primaryReactant: 'CaCO3',
+        primaryProduct: 'CO2',
+        computeVolumeFromReactant: (mCaCO3) => {
+          const M = mm('CaCO3');
+          const n = mCaCO3 / M;
+          const v = n * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: CaCO₃ + 2 HCl → CaCl₂ + H₂O + CO₂`,
+            `moles CaCO₃ = ${mCaCO3.toFixed(3)} / ${M} = ${n.toFixed(4)} mol`,
+            `moles CO₂ = moles CaCO₃ (1:1) = ${n.toFixed(4)} mol`,
+            `volume CO₂ = ${n.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        },
+        computeMassProduct: (mCaCO3) => {
+          // mass of CaCl2 produced (1:1)
+          const M_react = mm('CaCO3');
+          const n = mCaCO3 / M_react;
+          const M_prod = mm('CaCl2');
+          const mProd = n * M_prod;
+          const steps = [
+            `moles CaCO₃ = ${mCaCO3.toFixed(3)} / ${M_react} = ${n.toFixed(4)} mol`,
+            `moles CaCl₂ = moles CaCO₃ (1:1) = ${n.toFixed(4)} mol`,
+            `mass CaCl₂ = ${n.toFixed(4)} × ${M_prod} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'bacl2_na2so4',
+        eq: 'BaCl₂(aq) + Na₂SO₄(aq) → BaSO₄(s) + 2 NaCl(aq)',
+        primaryReactant: 'BaCl2',
+        primaryProduct: 'BaSO4',
+        computeMassFromReactant: (mBaCl2) => {
+          const M_react = mm('BaCl2');
+          const n = mBaCl2 / M_react;
+          const M_prod = mm('BaSO4');
+          const mProd = n * M_prod;
+          const steps = [
+            `Balanced equation: BaCl₂ + Na₂SO₄ → BaSO₄ + 2 NaCl`,
+            `moles BaCl₂ = ${mBaCl2.toFixed(3)} / ${M_react} = ${n.toFixed(4)} mol`,
+            `moles BaSO₄ = moles BaCl₂ (1:1) = ${n.toFixed(4)} mol`,
+            `mass BaSO₄ = ${n.toFixed(4)} × ${M_prod} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'cu_ag_silvering',
+        eq: 'Cu(s) + 2 AgNO₃(aq) → Cu(NO₃)₂(aq) + 2 Ag(s)',
+        primaryReactant: 'Cu',
+        primaryProduct: 'Ag',
+        computeMassFromReactant: (mCu) => {
+          const M_Cu = mm('Cu');
+          const M_Ag = mm('Ag');
+          const nCu = mCu / M_Cu;
+          const nAg = 2 * nCu; // 1 Cu gives 2 Ag
+          const mAg = nAg * M_Ag;
+          const steps = [
+            `Balanced equation: Cu + 2 AgNO₃ → Cu(NO₃)₂ + 2 Ag`,
+            `moles Cu = ${mCu.toFixed(3)} / ${M_Cu} = ${nCu.toFixed(4)} mol`,
+            `moles Ag = 2 × moles Cu = ${nAg.toFixed(4)} mol`,
+            `mass Ag = ${nAg.toFixed(4)} × ${M_Ag} = ${mAg.toFixed(4)} g`
+          ];
+          return { value: mAg, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'mgoh2_acid',
+        eq: 'Mg(OH)₂(s) + 2 HCl(aq) → MgCl₂(aq) + 2 H₂O(l)',
+        primaryReactant: 'Mg(OH)2',
+        primaryProduct: 'MgCl2',
+        computeMassFromReactant: (mMgOH2) => {
+          const M_react = mm('Mg(OH)2');
+          const M_prod = mm('MgCl2');
+          const n = mMgOH2 / M_react;
+          const mProd = n * M_prod;
+          const steps = [
+            `Balanced equation: Mg(OH)₂ + 2 HCl → MgCl₂ + 2 H₂O`,
+            `moles Mg(OH)₂ = ${mMgOH2.toFixed(3)} / ${M_react} = ${n.toFixed(4)} mol`,
+            `moles MgCl₂ = moles Mg(OH)₂ (1:1) = ${n.toFixed(4)} mol`,
+            `mass MgCl₂ = ${n.toFixed(4)} × ${M_prod} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'sodium_chloride_formation',
+        eq: '2 Na(s) + Cl₂(g) → 2 NaCl(s)',
+        primaryReactant: 'Na',
+        primaryProduct: 'NaCl_s',
+        computeMassFromReactant: (mNa) => {
+          const M_Na = mm('Na');
+          const M_NaCl = mm('NaCl_s');
+          const nNa = mNa / M_Na;
+          const nNaCl = nNa; // 2 Na -> 2 NaCl (1:1)
+          const mNaCl = nNaCl * M_NaCl;
+          const steps = [
+            `Balanced equation: 2 Na + Cl₂ → 2 NaCl`,
+            `moles Na = ${mNa.toFixed(3)} / ${M_Na} = ${nNa.toFixed(4)} mol`,
+            `moles NaCl = moles Na (1:1) = ${nNaCl.toFixed(4)} mol`,
+            `mass NaCl = ${nNaCl.toFixed(4)} × ${M_NaCl} = ${mNaCl.toFixed(4)} g`
+          ];
+          return { value: mNaCl, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'potassium_water',
+        eq: '2 K(s) + 2 H₂O(l) → 2 KOH(aq) + H₂(g)',
+        primaryReactant: 'K',
+        primaryProduct: 'H2',
+        computeVolumeFromReactant: (mK) => {
+          const M_K = mm('K');
+          const nK = mK / M_K;
+          const nH2 = nK / 2; // 2 K -> 1 H2
+          const vH2 = nH2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: 2 K + 2 H₂O → 2 KOH + H₂`,
+            `moles K = ${mK.toFixed(3)} / ${M_K} = ${nK.toFixed(4)} mol`,
+            `moles H₂ = (1/2) × moles K = ${nH2.toFixed(4)} mol`,
+            `volume H₂ = ${nH2.toFixed(4)} × ${MOLAR_VOLUME} = ${vH2.toFixed(4)} L`
+          ];
+          return { value: vH2, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'magnesium_nitride',
+        eq: '3 Mg(s) + N₂(g) → Mg₃N₂(s)',
+        primaryReactant: 'Mg',
+        primaryProduct: 'Mg3N2',
+        computeMassFromReactant: (mMg) => {
+          const M_Mg = mm('Mg');
+          const M_prod = mm('Mg3N2');
+          const nMg = mMg / M_Mg;
+          const nProd = nMg / 3; // 3 Mg -> 1 Mg3N2
+          const mProd = nProd * M_prod;
+          const steps = [
+            `Balanced equation: 3 Mg + N₂ → Mg₃N₂`,
+            `moles Mg = ${mMg.toFixed(3)} / ${M_Mg} = ${nMg.toFixed(4)} mol`,
+            `moles Mg₃N₂ = (1/3) × moles Mg = ${nProd.toFixed(4)} mol`,
+            `mass Mg₃N₂ = ${nProd.toFixed(4)} × ${M_prod} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'iron_chloride',
+        eq: '2 Fe(s) + 3 Cl₂(g) → 2 FeCl₃(s)',
+        primaryReactant: 'Fe',
+        primaryProduct: 'FeCl3',
+        computeMassFromReactant: (mFe) => {
+          const M_Fe = mm('Fe');
+          const M_prod = mm('FeCl3');
+          const nFe = mFe / M_Fe;
+          const nProd = nFe / 1; // 2 Fe -> 2 FeCl3 (1:1)
+          const mProd = nProd * M_prod;
+          const steps = [
+            `Balanced equation: 2 Fe + 3 Cl₂ → 2 FeCl₃`,
+            `moles Fe = ${mFe.toFixed(3)} / ${M_Fe} = ${nFe.toFixed(4)} mol`,
+            `moles FeCl₃ = moles Fe (1:1) = ${nProd.toFixed(4)} mol`,
+            `mass FeCl₃ = ${nProd.toFixed(4)} × ${M_prod} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'barium_phosphate',
+        eq: '3 Ba(OH)₂(aq) + 2 H₃PO₄(aq) → Ba₃(PO₄)₂(s) + 6 H₂O(l)',
+        primaryReactant: 'Ba(OH)2',
+        primaryProduct: 'Ba3(PO4)2',
+        computeMassFromReactant: (mBaOH2) => {
+          const M_react = mm('Ba(OH)2');
+          const M_prod = mm('Ba3(PO4)2');
+          const n = mBaOH2 / M_react;
+          const nProd = n / 3; // 3 Ba(OH)2 -> 1 Ba3(PO4)2
+          const mProd = nProd * M_prod;
+          const steps = [
+            `Balanced equation: 3 Ba(OH)₂ + 2 H₃PO₄ → Ba₃(PO₄)₂ + 6 H₂O`,
+            `moles Ba(OH)₂ = ${mBaOH2.toFixed(3)} / ${M_react} = ${n.toFixed(4)} mol`,
+            `moles Ba₃(PO₄)₂ = (1/3) × moles Ba(OH)₂ = ${nProd.toFixed(4)} mol`,
+            `mass Ba₃(PO₄)₂ = ${nProd.toFixed(4)} × ${M_prod} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'aluminium_acid',
+        eq: '2 Al(s) + 3 H₂SO₄(aq) → Al₂(SO₄)₃(aq) + 3 H₂(g)',
+        primaryReactant: 'Al',
+        primaryProduct: 'H2',
+        computeVolumeFromReactant: (mAl) => {
+          const M_Al = mm('Al');
+          const nAl = mAl / M_Al;
+          const nH2 = (3/2) * (nAl / 1); // 2 Al -> 3 H2 ; so per mole Al: 1.5 mol H2
+          const vH2 = nH2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: 2 Al + 3 H₂SO₄ → Al₂(SO₄)₃ + 3 H₂`,
+            `moles Al = ${mAl.toFixed(3)} / ${M_Al} = ${nAl.toFixed(4)} mol`,
+            `moles H₂ = (3/2) × moles Al = ${nH2.toFixed(4)} mol`,
+            `volume H₂ = ${nH2.toFixed(4)} × ${MOLAR_VOLUME} = ${vH2.toFixed(4)} L`
+          ];
+          return { value: vH2, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'octane_combustion',
+        eq: '2 C₈H₁₈(l) + 25 O₂(g) → 16 CO₂(g) + 18 H₂O(g)',
+        primaryReactant: 'C8H18',
+        primaryProduct: 'CO2',
+        computeVolumeFromReactant: (mOctane) => {
+          const M_r = mm('C8H18');
+          const n = mOctane / M_r;
+          const nCO2 = 8 * n; // 2 C8H18 -> 16 CO2 -> per mol C8H18 it's 8
+          const v = nCO2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: 2 C₈H₁₈ + 25 O₂ → 16 CO₂ + 18 H₂O`,
+            `moles C₈H₁₈ = ${mOctane.toFixed(3)} / ${M_r} = ${n.toFixed(4)} mol`,
+            `moles CO₂ = 8 × moles C₈H₁₈ = ${nCO2.toFixed(4)} mol`,
+            `volume CO₂ = ${nCO2.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'phosphorus_combustion',
+        eq: 'P₄(s) + 5 O₂(g) → P₄O₁₀(s)',
+        primaryReactant: 'P4',
+        primaryProduct: 'P4O10',
+        computeMassFromReactant: (mP4) => {
+          const M_r = mm('P4');
+          const M_p = mm('P4O10');
+          const n = mP4 / M_r;
+          const mProd = n * M_p;
+          const steps = [
+            `Balanced equation: P₄ + 5 O₂ → P₄O₁₀`,
+            `moles P₄ = ${mP4.toFixed(3)} / ${M_r} = ${n.toFixed(4)} mol`,
+            `moles P₄O₁₀ = moles P₄ (1:1) = ${n.toFixed(4)} mol`,
+            `mass P₄O₁₀ = ${n.toFixed(4)} × ${M_p} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'ammonia_oxidation',
+        eq: '4 NH₃(g) + 5 O₂(g) → 4 NO(g) + 6 H₂O(g)',
+        primaryReactant: 'NH3',
+        primaryProduct: 'NO',
+        computeVolumeFromReactant: (vNH3) => {
+          // gas-gas volume ratio: 4 NH3 -> 4 NO so 1:1 for NH3:NO
+          const vNO = vNH3; 
+          const steps = [
+            `Balanced equation: 4 NH₃ + 5 O₂ → 4 NO + 6 H₂O`,
+            `Volume ratio NH₃ : NO = 1 : 1`,
+            `Volume NO = ${vNH3.toFixed(3)} L = ${vNO.toFixed(3)} L`
+          ];
+          return { value: vNO, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'calcium_phosphate_hardness',
+        eq: 'Ca₃(PO₄)₂(s) + 3 H₂SO₄(aq) → 3 CaSO₄(s) + 2 H₃PO₄(aq)',
+        primaryReactant: 'Ca3(PO4)2',
+        primaryProduct: 'CaSO4',
+        computeMassFromReactant: (mReact) => {
+          const M_r = mm('Ca3(PO4)2');
+          const M_p = mm('CaSO4');
+          const n = mReact / M_r;
+          const nProd = 3 * n; // 1 Ca3(PO4)2 -> 3 CaSO4
+          const mProd = nProd * M_p;
+          const steps = [
+            `Balanced equation: Ca₃(PO₄)₂ + 3 H₂SO₄ → 3 CaSO₄ + 2 H₃PO₄`,
+            `moles Ca₃(PO₄)₂ = ${mReact.toFixed(3)} / ${M_r} = ${n.toFixed(4)} mol`,
+            `moles CaSO₄ = 3 × moles Ca₃(PO₄)₂ = ${nProd.toFixed(4)} mol`,
+            `mass CaSO₄ = ${nProd.toFixed(4)} × ${M_p} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'iron_reduction_c',
+        eq: '2 Fe₂O₃(s) + 3 C(s) → 4 Fe(s) + 3 CO₂(g)',
+        primaryReactant: 'Fe2O3',
+        primaryProduct: 'Fe',
+        computeMassFromReactant: (mFe2O3) => {
+          const M_r = mm('Fe2O3');
+          // mm() may not have Fe2O3 key - use approximate if not present
+          const M_Fe2O3 = mm('Fe2O3') || 159.69;
+          const M_Fe = mm('Fe');
+          const n = mFe2O3 / M_Fe2O3;
+          const nFe = 2 * n; // 2 Fe2O3 -> 4 Fe => per mol Fe2O3 => 2 mol Fe
+          const mFe = nFe * M_Fe;
+          const steps = [
+            `Balanced equation: 2 Fe₂O₃ + 3 C → 4 Fe + 3 CO₂`,
+            `moles Fe₂O₃ = ${mFe2O3.toFixed(3)} / ${M_Fe2O3} = ${n.toFixed(4)} mol`,
+            `moles Fe = 2 × moles Fe₂O₃ = ${nFe.toFixed(4)} mol`,
+            `mass Fe = ${nFe.toFixed(4)} × ${M_Fe} = ${mFe.toFixed(4)} g`
+          ];
+          return { value: mFe, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'kmno4_decomposition',
+        eq: '2 KMnO₄(s) → K₂MnO₄(s) + MnO₂(s) + O₂(g)',
+        primaryReactant: 'KMnO4',
+        primaryProduct: 'O2',
+        computeVolumeFromReactant: (mKMnO4) => {
+          const M_r = mm('KMnO4');
+          const M_r_use = M_r || 158.04;
+          const n = mKMnO4 / M_r_use;
+          const nO2 = 0.5 * n; // 2 KMnO4 -> O2 (1 mol O2 per 2 mol KMnO4)
+          const v = nO2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: 2 KMnO₄ → K₂MnO₄ + MnO₂ + O₂`,
+            `moles KMnO₄ = ${mKMnO4.toFixed(3)} / ${M_r_use} = ${n.toFixed(4)} mol`,
+            `moles O₂ = (1/2) × moles KMnO₄ = ${nO2.toFixed(4)} mol`,
+            `volume O₂ = ${nO2.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'copper_nitrate_decomp',
+        eq: '2 Cu(NO₃)₂(s) → 2 CuO(s) + 4 NO₂(g) + O₂(g)',
+        primaryReactant: 'Cu(NO3)2_s',
+        primaryProduct: 'NO2',
+        computeVolumeFromReactant: (mSalt) => {
+          const M_r = mm('Cu(NO3)2_s');
+          const M_r_use = M_r || 187.56;
+          const n = mSalt / M_r_use;
+          const nNO2 = 2 * n; // 2 Cu(NO3)2 -> 4 NO2 => per mol Cu(NO3)2 produce 2 mol NO2
+          const v = nNO2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: 2 Cu(NO₃)₂ → 2 CuO + 4 NO₂ + O₂`,
+            `moles Cu(NO₃)₂ = ${mSalt.toFixed(3)} / ${M_r_use} = ${n.toFixed(4)} mol`,
+            `moles NO₂ = 2 × moles Cu(NO₃)₂ = ${nNO2.toFixed(4)} mol`,
+            `volume NO₂ = ${nNO2.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'chlorine_iodide',
+        eq: 'Cl₂(g) + 2 KI(aq) → 2 KCl(aq) + I₂(s)',
+        primaryReactant: 'Cl2',
+        primaryProduct: 'I2',
+        computeMassFromReactant: (mCl2) => {
+          const M_Cl2 = mm('Cl2');
+          const M_I2 = mm('I2');
+          const nCl2 = mCl2 / M_Cl2;
+          const nI2 = nCl2; // 1 Cl2 -> 1 I2
+          const mI2 = nI2 * M_I2;
+          const steps = [
+            `Balanced equation: Cl₂ + 2 KI → 2 KCl + I₂`,
+            `moles Cl₂ = ${mCl2.toFixed(3)} / ${M_Cl2} = ${nCl2.toFixed(4)} mol`,
+            `moles I₂ = moles Cl₂ (1:1) = ${nI2.toFixed(4)} mol`,
+            `mass I₂ = ${nI2.toFixed(4)} × ${M_I2} = ${mI2.toFixed(4)} g`
+          ];
+          return { value: mI2, unit: 'g', steps };
+        }
+      },
+      {
+        id: 'magnesium_nitride_hydrolysis',
+        eq: 'Mg₃N₂(s) + 6 H₂O(l) → 3 Mg(OH)₂(s) + 2 NH₃(g)',
+        primaryReactant: 'Mg3N2',
+        primaryProduct: 'NH3_g',
+        computeVolumeFromReactant: (mMg3N2) => {
+          const M_r = mm('Mg3N2');
+          const M_r_use = M_r || 100.93;
+          const n = mMg3N2 / M_r_use;
+          const nNH3 = 2 * n; // 1 Mg3N2 -> 2 NH3
+          const v = nNH3 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: Mg₃N₂ + 6 H₂O → 3 Mg(OH)₂ + 2 NH₃`,
+            `moles Mg₃N₂ = ${mMg3N2.toFixed(3)} / ${M_r_use} = ${n.toFixed(4)} mol`,
+            `moles NH₃ = 2 × moles Mg₃N₂ = ${nNH3.toFixed(4)} mol`,
+            `volume NH₃ = ${nNH3.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'lead_nitrate_decomp',
+        eq: '2 Pb(NO₃)₂(s) → 2 PbO(s) + 4 NO₂(g) + O₂(g)',
+        primaryReactant: 'Pb(NO3)2',
+        primaryProduct: 'NO2',
+        computeVolumeFromReactant: (mSalt) => {
+          const M_r = mm('Pb(NO3)2');
+          const M_r_use = M_r || 331.2;
+          const n = mSalt / M_r_use;
+          const nNO2 = 2 * n; // 2 Pb(NO3)2 -> 4 NO2 => per mol produce 2 NO2
+          const v = nNO2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: 2 Pb(NO₃)₂ → 2 PbO + 4 NO₂ + O₂`,
+            `moles Pb(NO₃)₂ = ${mSalt.toFixed(3)} / ${M_r_use} = ${n.toFixed(4)} mol`,
+            `moles NO₂ = 2 × moles Pb(NO₃)₂ = ${nNO2.toFixed(4)} mol`,
+            `volume NO₂ = ${nNO2.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'mn_o2_chlorine',
+        eq: 'MnO₂(s) + 4 HCl(aq) → MnCl₂(aq) + 2 H₂O(l) + Cl₂(g)',
+        primaryReactant: 'MnO2',
+        primaryProduct: 'Cl2',
+        computeVolumeFromReactant: (mMnO2) => {
+          const M_r = mm('MnO2');
+          const M_r_use = M_r || 86.94;
+          const n = mMnO2 / M_r_use;
+          const nCl2 = 0.5 * n; // 1 MnO2 gives 0.5 Cl2 (since 1 MnO2 -> 1/2 Cl2? Balanced: 1 MnO2 + 4 HCl -> ... + Cl2 -> 1 MnO2 produces 1/2 Cl2? Wait the equation: MnO2 + 4 HCl -> MnCl2 + 2H2O + Cl2 ; so 1:1
+          const nCl2_corr = n; // 1:1
+          const v = nCl2_corr * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: MnO₂ + 4 HCl → MnCl₂ + 2 H₂O + Cl₂`,
+            `moles MnO₂ = ${mMnO2.toFixed(3)} / ${M_r_use} = ${n.toFixed(4)} mol`,
+            `moles Cl₂ = moles MnO₂ (1:1) = ${nCl2_corr.toFixed(4)} mol`,
+            `volume Cl₂ = ${nCl2_corr.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'iron_water_steam',
+        eq: '3 Fe(s) + 4 H₂O(g) → Fe₃O₄(s) + 4 H₂(g)',
+        primaryReactant: 'Fe',
+        primaryProduct: 'H2',
+        computeVolumeFromReactant: (mFe) => {
+          const M_Fe = mm('Fe');
+          const nFe = mFe / M_Fe;
+          const nH2 = (4/3) * nFe; // 3 Fe -> 4 H2 ; per mol Fe: 4/3
+          const v = nH2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: 3 Fe + 4 H₂O → Fe₃O₄ + 4 H₂`,
+            `moles Fe = ${mFe.toFixed(3)} / ${M_Fe} = ${nFe.toFixed(4)} mol`,
+            `moles H₂ = (4/3) × moles Fe = ${nH2.toFixed(4)} mol`,
+            `volume H₂ = ${nH2.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'ethanol_combustion',
+        eq: 'C₂H₅OH(l) + 3 O₂(g) → 2 CO₂(g) + 3 H₂O(g)',
+        primaryReactant: 'C2H5OH',
+        primaryProduct: 'CO2',
+        computeVolumeFromReactant: (mEtOH) => {
+          const M_r = mm('C2H5OH');
+          const M_r_use = M_r || 46.07;
+          const n = mEtOH / M_r_use;
+          const nCO2 = 2 * n; // 1 ethanol -> 2 CO2
+          const v = nCO2 * MOLAR_VOLUME;
+          const steps = [
+            `Balanced equation: C₂H₅OH + 3 O₂ → 2 CO₂ + 3 H₂O`,
+            `moles C₂H₅OH = ${mEtOH.toFixed(3)} / ${M_r_use} = ${n.toFixed(4)} mol`,
+            `moles CO₂ = 2 × moles C₂H₅OH = ${nCO2.toFixed(4)} mol`,
+            `volume CO₂ = ${nCO2.toFixed(4)} × ${MOLAR_VOLUME} = ${v.toFixed(4)} L`
+          ];
+          return { value: v, unit: 'L', steps };
+        }
+      },
+      {
+        id: 'lime_carbonation',
+        eq: 'Ca(OH)₂(aq) + CO₂(g) → CaCO₃(s) + H₂O(l)',
+        primaryReactant: 'Ca(OH)2',
+        primaryProduct: 'CaCO3_s',
+        computeMassFromReactant: (mCaOH2) => {
+          const M_r = mm('Ca(OH)2');
+          const M_p = mm('CaCO3_s');
+          const n = mCaOH2 / M_r;
+          const nProd = n; // 1:1
+          const mProd = nProd * M_p;
+          const steps = [
+            `Balanced equation: Ca(OH)₂ + CO₂ → CaCO₃ + H₂O`,
+            `moles Ca(OH)₂ = ${mCaOH2.toFixed(3)} / ${M_r} = ${n.toFixed(4)} mol`,
+            `moles CaCO₃ = moles Ca(OH)₂ (1:1) = ${nProd.toFixed(4)} mol`,
+            `mass CaCO₃ = ${nProd.toFixed(4)} × ${M_p} = ${mProd.toFixed(4)} g`
+          ];
+          return { value: mProd, unit: 'g', steps };
         }
       }
     ];
@@ -278,7 +878,7 @@
 
     /* Utilities */
     function escapeHtml(s){
-      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));
+      return String(s).replace(/[&<>\"']/g, c => ({'&':'&amp;','&lt;':'&lt;','&gt;':'&gt;','\"':'&quot;',"'":"&#39;"}[c]));
     }
 
     function roundToSignificantFigures(num, sig) {
@@ -289,7 +889,7 @@
 
     function toSignificantString(num, sig) {
       if (!isFinite(num)) return String(num);
-      return Number(num).toPrecision(sig).replace(/(?:\.0+|([\.]\d+?)0+)$/, '$1');
+      return Number(num).toPrecision(sig).replace(/(?:\\.0+|([\\.]\\d+?)0+)$/, '$1');
     }
 
     function relativeError(a,b){
@@ -441,7 +1041,7 @@
     }
 
     /* Player handling */
-    function sanitizeName(n){ return n ? String(n).trim().replace(/\s+/g,' ').slice(0,32) : ''; }
+    function sanitizeName(n){ return n ? String(n).trim().replace(/\\s+/g,' ') .slice(0,32) : ''; }
 
     function loadPlayer(){
       try { return localStorage.getItem(PLAYER_KEY); } catch(e){ return null; }
@@ -481,7 +1081,7 @@
       playerFeedbackEl.className = 'player-feedback';
     }
 
-    /* New question generator */
+    /* New question generator (uses expanded reaction list) */
     function newQuestion(){
       const selected = questionTypeSelect.value || 'random';
       answerFeedbackEl.textContent = '';
@@ -494,40 +1094,58 @@
       const typeChoice = (selected === 'random') ? types[Math.floor(Math.random()*types.length)] : selected;
 
       let info, prompt;
+
       if (typeChoice === 'mass-mass'){
-        if (Math.random() < 0.5){
-          const mH2 = Number((Math.random()*(48) + 2).toFixed(2));
-          info = REACTIONS[0].computeMassFromH2(mH2);
-          prompt = `How many grams of H₂O are formed from ${mH2} g of H₂?`;
-          currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[0].eq };
-        } else {
-          const mC = Number((Math.random()*(39) + 1).toFixed(2));
-          info = REACTIONS[1].computeMassFromC(mC);
-          prompt = `How many grams of CO₂ are formed from ${mC} g of C?`;
-          currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[1].eq };
-        }
+        // pick a reaction that supports mass -> mass
+        const candidates = REACTIONS.filter(r => typeof r.computeMassFromReactant === 'function');
+        if (candidates.length === 0) return;
+        const reaction = candidates[Math.floor(Math.random()*candidates.length)];
+
+        // pick a sensible random mass (1 - 50 g typical)
+        const m = Number((Math.random()*(49) + 1).toFixed(2));
+        info = reaction.computeMassFromReactant(m);
+        prompt = `How many grams of ${reaction.primaryProduct.replace(/_/g,'')} are produced from ${m} g of ${reaction.primaryReactant.replace(/_/g,'')}?`;
+        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: reaction.eq };
       } else if (typeChoice === 'mass-gas'){
-        const mC = Number((Math.random()*(39) + 1).toFixed(2));
-        info = REACTIONS[1].computeVolumeCO2FromC(mC);
-        prompt = `What volume (L) of CO₂ is formed from ${mC} g of C? (use ${MOLAR_VOLUME} L mol⁻¹)`;
-        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[1].eq };
+        // pick reaction that produces a gas from a solid (has computeVolumeFromReactant)
+        const candidates = REACTIONS.filter(r => typeof r.computeVolumeFromReactant === 'function');
+        if (candidates.length === 0) return;
+        const reaction = candidates[Math.floor(Math.random()*candidates.length)];
+        const m = Number((Math.random()*(49) + 1).toFixed(2));
+        info = reaction.computeVolumeFromReactant(m);
+        prompt = `What volume (L) of ${reaction.primaryProduct.replace(/_/g,'')} is formed from ${m} g of ${reaction.primaryReactant.replace(/_/g,'')}? (use ${MOLAR_VOLUME} L mol⁻¹)`;
+        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: reaction.eq };
       } else if (typeChoice === 'gas-gas'){
-        const vH2 = Number((Math.random()*(9) + 1).toFixed(2));
-        info = REACTIONS[0].computeO2FromH2Volume(vH2);
-        prompt = `What volume (L) of O₂ is required to react with ${vH2} L of H₂ (same conditions)?`;
-        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[0].eq };
+        // pick reaction supporting volume -> volume (gas-gas volume ratios)
+        const candidates = REACTIONS.filter(r => typeof r.computeVolumeFromVolume === 'function');
+        if (candidates.length === 0){
+          // fallback: choose from reactions with gas-gas obvious ratio (e.g. H2/O2 or NH3/NO)
+          const fallback = REACTIONS.filter(r => r.id === 'water-formation' || r.id === 'ammonia_oxidation');
+          if (fallback.length === 0) return;
+          const reaction = fallback[Math.floor(Math.random()*fallback.length)];
+          const v = Number((Math.random()*(9) + 1).toFixed(2));
+          info = reaction.computeVolumeFromVolume(v);
+          prompt = `What volume (L) of reactant/product is required/produced for ${v} L in the reaction ${reaction.eq}?`;
+          currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: reaction.eq };
+        } else {
+          const reaction = candidates[Math.floor(Math.random()*candidates.length)];
+          const v = Number((Math.random()*(9) + 1).toFixed(2));
+          info = reaction.computeVolumeFromVolume(v);
+          prompt = `What volume (L) of ${reaction.primaryProduct.replace(/_/g,'')} corresponds to ${v} L of ${reaction.primaryReactant.replace(/_/g,'')} in ${reaction.eq}?`;
+          currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: reaction.eq };
+        }
       } else if (typeChoice === 'conc-gpl'){
         const m = Number((Math.random()*(19) + 1).toFixed(2));
         const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
-        info = REACTIONS[2].computeConcentration_g_per_L(m,v);
+        info = REACTIONS.find(r=>r.id==='concentration').computeConcentration_g_per_L(m,v);
         prompt = `What is the concentration (g L⁻¹) when ${m} g of NaCl is dissolved in ${v} L?`;
-        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[2].eq };
+        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS.find(r=>r.id==='concentration').eq };
       } else if (typeChoice === 'conc-mol'){
         const m = Number((Math.random()*(19) + 1).toFixed(2));
         const v = Number((Math.random()*(1.9) + 0.1).toFixed(2));
-        info = REACTIONS[2].computeConcentration_mol_per_L(m,v,M_NaCl);
+        info = REACTIONS.find(r=>r.id==='concentration').computeConcentration_mol_per_L(m,v,M_NaCl);
         prompt = `What is the concentration (mol L⁻¹) when ${m} g of NaCl (M = ${M_NaCl}) is dissolved in ${v} L?`;
-        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS[2].eq };
+        currentQuestion = { type: typeChoice, prompt, correct: info.value, unit: info.unit, steps: info.steps, eq: REACTIONS.find(r=>r.id==='concentration').eq };
       } else {
         return newQuestion();
       }
@@ -618,7 +1236,7 @@
     init();
 
     // expose for debug (optional)
-    window._stoich = { newQuestion, checkAnswer, REACTIONS, M_NaCl, MOLAR_VOLUME };
+    window._stoich = { newQuestion, checkAnswer, REACTIONS, M_NaCl, MOLAR_VOLUME, mm };
 
   })();
   </script>
